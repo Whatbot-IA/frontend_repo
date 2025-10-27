@@ -20,32 +20,44 @@ function App() {
 
   const features = [
     {
-      icon: '🤖',
+      icon: (
+        <img src="/icon/24-hours-phone-service.png" alt="24/7" className="w-16 h-16" />
+      ),
       title: 'Atendimento 24/7',
       description: 'IA responde, vende e dá suporte em tempo real, sem parar.'
     },
     {
-      icon: '🛍️',
+      icon: (
+        <img src="/icon/online-store.png" alt="Loja Online" className="w-16 h-16" />
+      ),
       title: 'Integração com Lojas',
       description: 'Sincronize seus produtos e estoque facilmente.'
     },
     {
-      icon: '🌐',
+      icon: (
+        <img src="/icon/e-commerce.png" alt="E-commerce Completo" className="w-16 h-16" />
+      ),
       title: 'E-commerce Completo',
       description: 'Receba um site completo e compartilhe produtos nas redes sociais.'
     },
     {
-      icon: '💬',
+      icon: (
+        <img src="/icon/multiple-accounts.png" alt="Múltiplas Contas" className="w-16 h-16" />
+      ),
       title: 'Múltiplas Contas',
       description: 'Gerencie várias contas WhatsApp com diferentes finalidades.'
     },
     {
-      icon: '📊',
+      icon: (
+        <img src="/icon/report.png" alt="Relatórios Detalhados" className="w-16 h-16" />
+      ),
       title: 'Relatórios Detalhados',
       description: 'Acompanhe vendas e desempenho da IA em tempo real.'
     },
     {
-      icon: '🔒',
+      icon: (
+        <img src="/icon/security.png" alt="Segurança Total" className="w-16 h-16" />
+      ),
       title: 'Segurança Total',
       description: 'Todos os dados protegidos por criptografia de ponta.'
     }
@@ -54,21 +66,21 @@ function App() {
   const plans = [
     {
       name: 'Gratuito',
-      price: 'R$ 0',
+      price: 'Kz 0',
       period: '/mês',
       features: ['1 conta WhatsApp', '100 mensagens/mês', 'Recursos básicos', 'Suporte por email'],
       highlighted: false
     },
     {
       name: 'Profissional',
-      price: 'R$ 97',
+      price: 'Kz 2.500',
       period: '/mês',
       features: ['3 contas WhatsApp', 'Mensagens ilimitadas', 'Todos os recursos', 'Suporte prioritário', 'Relatórios avançados'],
       highlighted: true
     },
     {
       name: 'Empresarial',
-      price: 'R$ 297',
+      price: 'Kz 10.000',
       period: '/mês',
       features: ['10 contas WhatsApp', 'Mensagens ilimitadas', 'API personalizada', 'Suporte 24/7', 'Gerente de conta dedicado'],
       highlighted: false
@@ -200,7 +212,13 @@ function App() {
                 key={index} 
                 className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 border border-gray-100"
               >
-                <div className="text-5xl mb-4">{feature.icon}</div>
+                <div className="flex justify-center mb-4">
+                  {typeof feature.icon === 'string' ? (
+                    <span className="text-5xl">{feature.icon}</span>
+                  ) : (
+                    feature.icon
+                  )}
+                </div>
                 <h3 className="text-2xl font-bold mb-3 text-gray-900">{feature.title}</h3>
                 <p className="text-gray-600 leading-relaxed">{feature.description}</p>
               </div>
