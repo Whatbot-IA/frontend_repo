@@ -132,25 +132,19 @@ function App() {
       </header>
 
       {/* Hero Section */}
-      <section id="hero" className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="animate-fade-in-left">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-4">
+      <section id="hero" className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="max-w-[1400px] mx-auto px-2 w-full">
+          <div className="grid lg:grid-cols-2 gap-8 items-center">
+            <div className="animate-fade-in-left pl-0 lg:pl-4">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-6">
                 <span className="bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary bg-clip-text text-transparent">
-                  Whatbot IA
-                </span>
-                <br />
-                <span className="text-gray-900">
-                  Automação Inteligente de
-                  <br />
-                  Vendas via WhatsApp
+                Automação Inteligente de Vendas via WhatsApp
                 </span>
               </h1>
-              <p className="text-xl sm:text-2xl text-whatsapp-secondary font-semibold mb-4">
+              <p className="text-2xl sm:text-3xl text-whatsapp-secondary font-semibold mb-6">
                 Conecte. Automatize. Venda.
               </p>
-              <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
                 Transforme seu WhatsApp em uma máquina de vendas 24/7. 
                 Atenda, venda e fidelize clientes automaticamente com Inteligência Artificial.
               </p>
@@ -194,8 +188,8 @@ function App() {
           </div>
         </div>
       </section>      {/* Features Section */}
-      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="max-w-7xl mx-auto">
+      <section id="features" className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-7xl mx-auto w-full">
           <h2 className="text-4xl sm:text-5xl font-extrabold text-center mb-4">Recursos Principais</h2>
           <p className="text-xl text-gray-600 text-center mb-16">
             Tudo que você precisa para automatizar suas vendas
@@ -216,8 +210,8 @@ function App() {
       </section>
 
       {/* How it Works Section */}
-      <section id="how-it-works" className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="max-w-7xl mx-auto">
+      <section id="how-it-works" className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="max-w-7xl mx-auto w-full">
           <h2 className="text-4xl sm:text-5xl font-extrabold text-center mb-4">Como Funciona</h2>
           <p className="text-xl text-gray-600 text-center mb-16">
             Simples, rápido e eficiente
@@ -242,8 +236,8 @@ function App() {
       </section>
 
       {/* Plans Section */}
-      <section id="plans" className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="max-w-7xl mx-auto">
+      <section id="plans" className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-7xl mx-auto w-full">
           <h2 className="text-4xl sm:text-5xl font-extrabold text-center mb-4">Planos e Preços</h2>
           <p className="text-xl text-gray-600 text-center mb-16">
             Escolha o plano ideal para seu negócio
@@ -292,8 +286,8 @@ function App() {
       </section>
 
       {/* CTA Section */}
-      <section id="contact" className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary text-white text-center">
-        <div className="max-w-4xl mx-auto">
+      <section id="contact" className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary text-white text-center">
+        <div className="max-w-4xl mx-auto w-full">
           <h2 className="text-4xl sm:text-5xl font-extrabold mb-6">
             Pronto para Revolucionar suas Vendas?
           </h2>
