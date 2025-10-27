@@ -92,7 +92,7 @@ function App() {
           <div className="flex justify-between items-center lg:grid lg:grid-cols-3">
             {/* Logo - Esquerda */}
             <div className="flex items-center gap-3 text-2xl font-bold">
-              <img src="/logo.png" alt="Whatbot Logo" className="w-20 h-20 object-contain" />
+              <img src="/logo.png" alt="Whatbot Logo" className="w-15 h-15 object-contain" />
             </div>
 
             {/* Menu Mobile Toggle */}
@@ -132,7 +132,7 @@ function App() {
       </header>
 
       {/* Hero Section */}
-      <section id="hero" className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-gray-100">
+      <section id="hero" className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-gray-100 pt-24 lg:pt-0">
         <div className="max-w-[1400px] mx-auto px-2 w-full">
           <div className="grid lg:grid-cols-2 gap-8 items-center">
             <div className="animate-fade-in-left pl-0 lg:pl-4">
@@ -164,7 +164,7 @@ function App() {
             </div>
           </div>
 
-            <div className="flex justify-center items-center animate-fade-in-right">
+            <div className="hidden lg:flex justify-center items-center animate-fade-in-right">
               <div className="cube-loader">
                 <div className="cube-top">
                   <img src="/logo.png" alt="Whatbot" className="cube-top-logo" />
