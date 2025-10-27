@@ -5,6 +5,7 @@ import Home from './pages/Home'
 import SignUp from './pages/SignUp'
 import SignIn from './pages/SignIn'
 import ResetPass from './pages/resetPass'
+import Dashboard from './pages/Dashboard'
 
 function App() {
   const [loading, setLoading] = useState(true)
@@ -30,6 +31,7 @@ function App() {
         <Route path="/login" element={<SignIn />} />
         <Route path="/forgot-password" element={<ResetPass />} />
         <Route path="/reset-password" element={<ResetPass />} />
+        <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </Router>
   )
