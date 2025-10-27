@@ -144,7 +144,11 @@ function App() {
       </header>
 
       {/* Hero Section */}
-      <section id="hero" className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-gray-100 pt-24 lg:pt-0">
+      <section
+        id="hero"
+        className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 pt-24 lg:pt-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)), url('/fundo.png')" }}
+      >
         <div className="max-w-[1400px] mx-auto px-2 w-full">
           <div className="grid lg:grid-cols-2 gap-8 items-center">
             <div className="animate-fade-in-left pl-0 lg:pl-4">
@@ -199,8 +203,10 @@ function App() {
             </div>
           </div>
         </div>
-      </section>      {/* Features Section */}
-      <section id="features" className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 bg-white">
+      </section>      
+
+      {/* Features Section */}
+      <section id="features" className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 bg-white pt-16 lg:pt-0">
         <div className="max-w-7xl mx-auto w-full">
           <h2 className="text-4xl sm:text-5xl font-extrabold text-center mb-4">Recursos Principais</h2>
           <p className="text-xl text-gray-600 text-center mb-16">
@@ -228,7 +234,7 @@ function App() {
       </section>
 
       {/* How it Works Section */}
-      <section id="how-it-works" className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-gray-100">
+      <section id="how-it-works" className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-gray-100 pt-16 lg:pt-0">
         <div className="max-w-7xl mx-auto w-full">
           <h2 className="text-4xl sm:text-5xl font-extrabold text-center mb-4">Como Funciona</h2>
           <p className="text-xl text-gray-600 text-center mb-16">
@@ -254,7 +260,7 @@ function App() {
       </section>
 
       {/* Plans Section */}
-      <section id="plans" className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 bg-white">
+      <section id="plans" className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 bg-white pt-16 lg:pt-0">
         <div className="max-w-7xl mx-auto w-full">
           <h2 className="text-4xl sm:text-5xl font-extrabold text-center mb-4">Planos e Preços</h2>
           <p className="text-xl text-gray-600 text-center mb-16">
@@ -304,7 +310,7 @@ function App() {
       </section>
 
       {/* CTA Section */}
-      <section id="contact" className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary text-white text-center">
+      <section id="contact" className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary text-white text-center pt-16 lg:pt-0">
         <div className="max-w-4xl mx-auto w-full">
           <h2 className="text-4xl sm:text-5xl font-extrabold mb-6">
             Pronto para Revolucionar suas Vendas?
@@ -324,8 +330,7 @@ function App() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
             <div>
               <div className="flex items-center gap-2 text-2xl font-bold mb-4">
-                <span className="text-3xl">🤖</span>
-                <span>Whatbot IA</span>
+                <span>Whatbot</span>
               </div>
               <p className="text-gray-400">Automação inteligente de vendas via WhatsApp</p>
             </div>
@@ -349,12 +354,12 @@ function App() {
               <h4 className="text-lg font-semibold mb-4">Contato</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><a href="mailto:contato@whatbot.com" className="hover:text-whatsapp-primary transition">contato@whatbot.com</a></li>
-                <li><a href="tel:+5511999999999" className="hover:text-whatsapp-primary transition">+55 11 99999-9999</a></li>
+                <li><a href="tel:+244929782402" className="hover:text-whatsapp-primary transition">+244 929 782 402</a></li>
               </ul>
             </div>
           </div>
           <div className="border-t border-gray-800 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 Whatbot IA. Todos os direitos reservados.</p>
+            <p>&copy; {new Date().getFullYear()} Whatbot. Todos os direitos reservados.</p>
           </div>
         </div>
       </footer>
