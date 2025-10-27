@@ -172,12 +172,22 @@ function App() {
 
             <div className="flex justify-center items-center animate-fade-in-right">
               <div className="cube-loader">
-                <div className="cube-top" />
+                <div className="cube-top">
+                  <img src="/logo.png" alt="Whatbot" className="cube-top-logo" />
+                </div>
                 <div className="cube-wrapper">
-                  <span style={{'--i': 0}} className="cube-span" />
-                  <span style={{'--i': 1}} className="cube-span" />
-                  <span style={{'--i': 2}} className="cube-span" />
-                  <span style={{'--i': 3}} className="cube-span" />
+                  <span style={{'--i': 0}} className="cube-span">
+                    <div className="cube-text">Automatize</div>
+                  </span>
+                  <span style={{'--i': 1}} className="cube-span">
+                    <div className="cube-text">Venda 24/7</div>
+                  </span>
+                  <span style={{'--i': 2}} className="cube-span">
+                    <div className="cube-text">Call Center Inteligente</div>
+                  </span>
+                  <span style={{'--i': 3}} className="cube-span">
+                    <div className="cube-text">Cliente satisfeito</div>
+                  </span>
                 </div>
               </div>
             </div>
