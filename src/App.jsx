@@ -1,8 +1,10 @@
 ﻿import { useState, useEffect } from 'react'
+import Loader from './components/Loader'
 
 function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   // Detectar scroll
   useEffect(() => {
@@ -16,6 +18,15 @@ function App() {
 
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Loading screen
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false)
+    }, 2500)
+
+    return () => clearTimeout(timer)
   }, [])
 
   const features = [
@@ -93,6 +104,10 @@ function App() {
       element.scrollIntoView({ behavior: 'smooth' })
       setMenuOpen(false)
     }
+  }
+
+  if (loading) {
+    return <Loader />
   }
 
   return (
