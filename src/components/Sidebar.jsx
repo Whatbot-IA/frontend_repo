@@ -30,6 +30,11 @@ function Sidebar() {
       name: 'Planos',
       path: '/plans',
       icon: '/icon/plan.png'
+    },
+    {
+      name: 'Notificações',
+      path: '/notifications',
+      icon: '/icon/notification.png'
     }
   ]
 

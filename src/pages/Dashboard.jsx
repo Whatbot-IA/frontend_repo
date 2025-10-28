@@ -9,6 +9,9 @@ function Dashboard() {
     totalContacts: 892
   }
 
+  const notifications = 5 // Número de notificações pendentes
+  const userName = 'Hudson' // Nome do usuário (virá da API/contexto)
+
   const topProducts = [
     { name: 'Produto A', requests: 156 },
     { name: 'Produto B', requests: 134 },
@@ -33,61 +36,97 @@ function Dashboard() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
-            Dashboard
+            Bem-vindo, {userName}!
           </h1>
           <p className="text-gray-600">
-            Visão geral das suas contas e atividades
+            Estás na página de <span className="font-semibold">Dashboard</span> e tu tens{' '}
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-600">
+              {notifications}
+            </span>{' '}
+            {notifications === 1 ? 'notificação' : 'notificações'}
           </p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Connected Accounts */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-whatsapp-primary">
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-4xl">📱</div>
-              <div className="text-3xl font-bold text-whatsapp-primary">
-                {stats.connectedAccounts}
+        <div className="flex flex-col lg:flex-row gap-6 mb-8">
+          {/* Left Side - Large Card */}
+          <div className="flex-1 lg:w-1/2">
+            <div className="bg-white rounded-2xl shadow-lg p-8 h-full border-l-4 border-whatsapp-primary">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Visão Geral</h3>
+                  <p className="text-gray-500">Resumo das suas atividades</p>
+                </div>
+                <div className="text-6xl">📊</div>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <span className="text-gray-600 font-medium">Total de Vendas</span>
+                  <span className="text-2xl font-bold text-whatsapp-primary">Kz 125.450</span>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <span className="text-gray-600 font-medium">Taxa de Conversão</span>
+                  <span className="text-2xl font-bold text-blue-500">68%</span>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <span className="text-gray-600 font-medium">Tempo Médio de Resposta</span>
+                  <span className="text-2xl font-bold text-purple-500">2.5min</span>
+                </div>
               </div>
             </div>
-            <h3 className="text-gray-600 font-semibold">Contas Conectadas</h3>
-            <p className="text-sm text-gray-400 mt-1">WhatsApp Business</p>
           </div>
 
-          {/* Open Chats */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-blue-500">
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-4xl">💬</div>
-              <div className="text-3xl font-bold text-blue-500">
-                {stats.openChats}
+          {/* Right Side - Four Small Cards (2x2 Grid) */}
+          <div className="flex-1 lg:w-1/2">
+            <div className="grid grid-cols-2 gap-4 h-full">
+              {/* Connected Accounts */}
+              <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-whatsapp-primary">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-4xl">📱</div>
+                  <div className="text-3xl font-bold text-whatsapp-primary">
+                    {stats.connectedAccounts}
+                  </div>
+                </div>
+                <h3 className="text-gray-600 font-semibold">Contas Conectadas</h3>
+                <p className="text-sm text-gray-400 mt-1">WhatsApp Business</p>
               </div>
-            </div>
-            <h3 className="text-gray-600 font-semibold">Chats Abertos</h3>
-            <p className="text-sm text-gray-400 mt-1">Conversas ativas</p>
-          </div>
 
-          {/* Total Messages */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-purple-500">
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-4xl">📨</div>
-              <div className="text-3xl font-bold text-purple-500">
-                {stats.totalMessages}
+              {/* Open Chats */}
+              <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-blue-500">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-4xl">💬</div>
+                  <div className="text-3xl font-bold text-blue-500">
+                    {stats.openChats}
+                  </div>
+                </div>
+                <h3 className="text-gray-600 font-semibold">Chats Abertos</h3>
+                <p className="text-sm text-gray-400 mt-1">Conversas ativas</p>
               </div>
-            </div>
-            <h3 className="text-gray-600 font-semibold">Total de Mensagens</h3>
-            <p className="text-sm text-gray-400 mt-1">Últimas 24 horas</p>
-          </div>
 
-          {/* Total Contacts */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-orange-500">
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-4xl">👥</div>
-              <div className="text-3xl font-bold text-orange-500">
-                {stats.totalContacts}
+              {/* Total Messages */}
+              <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-purple-500">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-4xl">📨</div>
+                  <div className="text-3xl font-bold text-purple-500">
+                    {stats.totalMessages}
+                  </div>
+                </div>
+                <h3 className="text-gray-600 font-semibold">Total de Mensagens</h3>
+                <p className="text-sm text-gray-400 mt-1">Últimas 24 horas</p>
+              </div>
+
+              {/* Total Contacts */}
+              <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-orange-500">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-4xl">👥</div>
+                  <div className="text-3xl font-bold text-orange-500">
+                    {stats.totalContacts}
+                  </div>
+                </div>
+                <h3 className="text-gray-600 font-semibold">Total de Contatos</h3>
+                <p className="text-sm text-gray-400 mt-1">Base de clientes</p>
               </div>
             </div>
-            <h3 className="text-gray-600 font-semibold">Total de Contatos</h3>
-            <p className="text-sm text-gray-400 mt-1">Base de clientes</p>
           </div>
         </div>
 
