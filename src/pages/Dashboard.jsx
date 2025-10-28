@@ -1,7 +1,14 @@
+import { useState, useEffect } from 'react'
 import Sidebar from '../components/Sidebar'
 import styled from 'styled-components'
+import axios from 'axios'
 
 function Dashboard() {
+  // Estado para dados do clima
+  const [weatherData, setWeatherData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
   // Dados de exemplo (posteriormente virão da API)
   const stats = {
     connectedAccounts: 3,
@@ -12,6 +19,116 @@ function Dashboard() {
 
   const notifications = 5 // Número de notificações pendentes
   const userName = 'Hudson' // Nome do usuário (virá da API/contexto)
+
+  // Buscar dados do clima
+  useEffect(() => {
+    const fetchWeatherData = async () => {
+      try {
+        setLoading(true)
+        // API Key da OpenWeatherMap (configure no arquivo .env)
+        const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY
+        const city = import.meta.env.VITE_WEATHER_CITY || 'Luanda'
+        const country = import.meta.env.VITE_WEATHER_COUNTRY || 'AO'
+        
+        if (!API_KEY || API_KEY === 'sua_chave_api_aqui') {
+          setError('Configure a chave da API no arquivo .env')
+          setLoading(false)
+          return
+        }
+        
+        // Buscar clima atual
+        const currentWeather = await axios.get(
+          `https://api.openweathermap.org/data/2.5/weather?q=${city},${country}&appid=${API_KEY}&units=metric&lang=pt`
+        )
+        
+        // Buscar previsão dos próximos dias
+        const forecast = await axios.get(
+          `https://api.openweathermap.org/data/2.5/forecast?q=${city},${country}&appid=${API_KEY}&units=metric&lang=pt`
+        )
+
+        // Buscar qualidade do ar
+        const airQuality = await axios.get(
+          `https://api.openweathermap.org/data/2.5/air_pollution?lat=${currentWeather.data.coord.lat}&lon=${currentWeather.data.coord.lon}&appid=${API_KEY}`
+        )
+
+        setWeatherData({
+          current: currentWeather.data,
+          forecast: forecast.data,
+          airQuality: airQuality.data
+        })
+        setError(null)
+      } catch (err) {
+        console.error('Erro ao buscar dados do clima:', err)
+        setError('Não foi possível carregar os dados do clima')
+        // Manter dados de exemplo em caso de erro
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchWeatherData()
+    // Atualizar a cada 10 minutos
+    const interval = setInterval(fetchWeatherData, 600000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Funções auxiliares
+  const getWeatherIcon = (weatherCode) => {
+    // Códigos da OpenWeatherMap
+    if (weatherCode >= 200 && weatherCode < 300) return '⛈️' // Trovoada
+    if (weatherCode >= 300 && weatherCode < 400) return '🌧️' // Chuvisco
+    if (weatherCode >= 500 && weatherCode < 600) return '🌧️' // Chuva
+    if (weatherCode >= 600 && weatherCode < 700) return '❄️' // Neve
+    if (weatherCode >= 700 && weatherCode < 800) return '🌫️' // Atmosférico
+    if (weatherCode === 800) return '☀️' // Céu limpo
+    if (weatherCode === 801) return '🌤️' // Poucas nuvens
+    if (weatherCode === 802) return '⛅' // Nuvens dispersas
+    if (weatherCode === 803 || weatherCode === 804) return '☁️' // Muito nublado
+    return '🌤️'
+  }
+
+  const getAirQualityText = (aqi) => {
+    const qualityLevels = {
+      1: 'Excelente',
+      2: 'Boa',
+      3: 'Moderada',
+      4: 'Ruim',
+      5: 'Muito Ruim'
+    }
+    return qualityLevels[aqi] || 'Não disponível'
+  }
+
+  const formatTime = () => {
+    const now = new Date()
+    return now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  }
+
+  const formatDate = () => {
+    const now = new Date()
+    const days = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB']
+    return `${days[now.getDay()]} ${now.getDate().toString().padStart(2, '0')}-${(now.getMonth() + 1).toString().padStart(2, '0')}`
+  }
+
+  const getDayName = (dateString) => {
+    const date = new Date(dateString)
+    const days = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB']
+    return days[date.getDay()]
+  }
+
+  // Agrupar previsões por dia
+  const getForecastByDay = () => {
+    if (!weatherData?.forecast?.list) return []
+    
+    const dailyForecasts = {}
+    weatherData.forecast.list.forEach(item => {
+      const date = item.dt_txt.split(' ')[0]
+      if (!dailyForecasts[date]) {
+        dailyForecasts[date] = item
+      }
+    })
+    
+    return Object.values(dailyForecasts).slice(1, 5) // Próximos 4 dias
+  }
 
   const topProducts = [
     { name: 'Produto A', requests: 156 },
@@ -54,89 +171,115 @@ function Dashboard() {
           <div className="flex-1 lg:w-1/2">
             <StyledWrapper>
               <div className="card">
-                <section className="info-section">
-                  <div className="background-design">
-                    <div className="circle" />
-                    <div className="circle" />
-                    <div className="circle" />
+                {loading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-white text-lg">Carregando dados do clima...</div>
                   </div>
-                  <div className="left-side">
-                    <div className="weather">
-                      <div>
-                        <svg stroke="#ffffff" fill="#ffffff" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-                          <g strokeWidth={0} id="SVGRepo_bgCarrier" />
-                          <g strokeLinejoin="round" strokeLinecap="round" id="SVGRepo_tracerCarrier" />
-                          <g id="SVGRepo_iconCarrier">
-                            <path d="M512 704a192 192 0 1 0 0-384 192 192 0 0 0 0 384zm0 64a256 256 0 1 1 0-512 256 256 0 0 1 0 512zm0-704a32 32 0 0 1 32 32v64a32 32 0 0 1-64 0V96a32 32 0 0 1 32-32zm0 768a32 32 0 0 1 32 32v64a32 32 0 1 1-64 0v-64a32 32 0 0 1 32-32zM195.2 195.2a32 32 0 0 1 45.248 0l45.248 45.248a32 32 0 1 1-45.248 45.248L195.2 240.448a32 32 0 0 1 0-45.248zm543.104 543.104a32 32 0 0 1 45.248 0l45.248 45.248a32 32 0 0 1-45.248 45.248l-45.248-45.248a32 32 0 0 1 0-45.248zM64 512a32 32 0 0 1 32-32h64a32 32 0 0 1 0 64H96a32 32 0 0 1-32-32zm768 0a32 32 0 0 1 32-32h64a32 32 0 1 1 0 64h-64a32 32 0 0 1-32-32zM195.2 828.8a32 32 0 0 1 0-45.248l45.248-45.248a32 32 0 0 1 45.248 45.248L240.448 828.8a32 32 0 0 1-45.248 0zm543.104-543.104a32 32 0 0 1 0-45.248l45.248-45.248a32 32 0 0 1 45.248 45.248l-45.248 45.248a32 32 0 0 1-45.248 0z" fill="#ffffff" />
-                          </g>
-                        </svg>
+                ) : (
+                  <>
+                    {/* Aviso discreto no topo quando houver erro */}
+                    {error && (
+                      <div className="error-banner">
+                        <span className="error-icon">⚠️</span>
+                        <span className="error-text">Dados de exemplo - Configure a API no .env</span>
                       </div>
-                      <div>Ensolarado</div>
-                    </div>
-                    <div className="temperature">36°</div>
-                    <div className="range">Max: 42° Min: 28°</div>
-                    <div className="humidity">💧 Humidade: 65%</div>
-                    <div className="wind">💨 Vento: 12 km/h</div>
-                  </div>
-                  <div className="right-side">
-                    <div>
-                      <div className="hour">23:56</div>
-                      <div className="date">SEG 28-10</div>
-                    </div>
-                    <div className="city">Luanda, AO</div>
-                    <div className="quality">🌍 Qualidade do Ar: Boa</div>
-                  </div>
-                </section>
-                <section className="days-section">
-                  <button>
-                    <span className="day">TUE</span>
-                    <span className="icon-weather-day">
-                      <svg stroke="#ffffff" fill="#ffffff" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-                        <g strokeWidth={0} id="SVGRepo_bgCarrier" />
-                        <g strokeLinejoin="round" strokeLinecap="round" id="SVGRepo_tracerCarrier" />
-                        <g id="SVGRepo_iconCarrier">
-                          <path d="M512 704a192 192 0 1 0 0-384 192 192 0 0 0 0 384zm0 64a256 256 0 1 1 0-512 256 256 0 0 1 0 512zm0-704a32 32 0 0 1 32 32v64a32 32 0 0 1-64 0V96a32 32 0 0 1 32-32zm0 768a32 32 0 0 1 32 32v64a32 32 0 1 1-64 0v-64a32 32 0 0 1 32-32zM195.2 195.2a32 32 0 0 1 45.248 0l45.248 45.248a32 32 0 1 1-45.248 45.248L195.2 240.448a32 32 0 0 1 0-45.248zm543.104 543.104a32 32 0 0 1 45.248 0l45.248 45.248a32 32 0 0 1-45.248 45.248l-45.248-45.248a32 32 0 0 1 0-45.248zM64 512a32 32 0 0 1 32-32h64a32 32 0 0 1 0 64H96a32 32 0 0 1-32-32zm768 0a32 32 0 0 1 32-32h64a32 32 0 1 1 0 64h-64a32 32 0 0 1-32-32zM195.2 828.8a32 32 0 0 1 0-45.248l45.248-45.248a32 32 0 0 1 45.248 45.248L240.448 828.8a32 32 0 0 1-45.248 0zm543.104-543.104a32 32 0 0 1 0-45.248l45.248-45.248a32 32 0 0 1 45.248 45.248l-45.248 45.248a32 32 0 0 1-45.248 0z" fill="#ffffff" />
-                        </g>
-                      </svg>
-                    </span>
-                  </button>
-                  <button>
-                    <span className="day">WED</span>
-                    <span className="icon-weather-day">
-                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff">
-                        <g id="SVGRepo_bgCarrier" strokeWidth={0} />
-                        <g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round" />
-                        <g id="SVGRepo_iconCarrier">
-                          <path d="M16 18.5L15 21M8 18.5L7 21M12 18.5L11 21M7 15C4.23858 15 2 12.7614 2 10C2 7.23858 4.23858 5 7 5C7.03315 5 7.06622 5.00032 7.09922 5.00097C8.0094 3.2196 9.86227 2 12 2C14.5192 2 16.6429 3.69375 17.2943 6.00462C17.3625 6.00155 17.4311 6 17.5 6C19.9853 6 22 8.01472 22 10.5C22 12.9853 19.9853 15 17.5 15C13.7434 15 11.2352 15 7 15Z" stroke="#ffffff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                        </g>
-                      </svg>
-                    </span>
-                  </button>
-                  <button>
-                    <span className="day">THU</span>
-                    <span className="icon-weather-day">
-                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff">
-                        <g id="SVGRepo_bgCarrier" strokeWidth={0} />
-                        <g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round" />
-                        <g id="SVGRepo_iconCarrier">
-                          <path d="M16 18.5L15 21M8 18.5L7 21M12 18.5L11 21M7 15C4.23858 15 2 12.7614 2 10C2 7.23858 4.23858 5 7 5C7.03315 5 7.06622 5.00032 7.09922 5.00097C8.0094 3.2196 9.86227 2 12 2C14.5192 2 16.6429 3.69375 17.2943 6.00462C17.3625 6.00155 17.4311 6 17.5 6C19.9853 6 22 8.01472 22 10.5C22 12.9853 19.9853 15 17.5 15C13.7434 15 11.2352 15 7 15Z" stroke="#ffffff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                        </g>
-                      </svg>
-                    </span>
-                  </button>
-                  <button>
-                    <span className="day">FRI</span>
-                    <span className="icon-weather-day">
-                      <svg stroke="#ffffff" fill="#ffffff" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-                        <g strokeWidth={0} id="SVGRepo_bgCarrier" />
-                        <g strokeLinejoin="round" strokeLinecap="round" id="SVGRepo_tracerCarrier" />
-                        <g id="SVGRepo_iconCarrier">
-                          <path d="M512 704a192 192 0 1 0 0-384 192 192 0 0 0 0 384zm0 64a256 256 0 1 1 0-512 256 256 0 0 1 0 512zm0-704a32 32 0 0 1 32 32v64a32 32 0 0 1-64 0V96a32 32 0 0 1 32-32zm0 768a32 32 0 0 1 32 32v64a32 32 0 1 1-64 0v-64a32 32 0 0 1 32-32zM195.2 195.2a32 32 0 0 1 45.248 0l45.248 45.248a32 32 0 1 1-45.248 45.248L195.2 240.448a32 32 0 0 1 0-45.248zm543.104 543.104a32 32 0 0 1 45.248 0l45.248 45.248a32 32 0 0 1-45.248 45.248l-45.248-45.248a32 32 0 0 1 0-45.248zM64 512a32 32 0 0 1 32-32h64a32 32 0 0 1 0 64H96a32 32 0 0 1-32-32zm768 0a32 32 0 0 1 32-32h64a32 32 0 1 1 0 64h-64a32 32 0 0 1-32-32zM195.2 828.8a32 32 0 0 1 0-45.248l45.248-45.248a32 32 0 0 1 45.248 45.248L240.448 828.8a32 32 0 0 1-45.248 0zm543.104-543.104a32 32 0 0 1 0-45.248l45.248-45.248a32 32 0 0 1 45.248 45.248l-45.248 45.248a32 32 0 0 1-45.248 0z" fill="#ffffff" />
-                        </g>
-                      </svg>
-                    </span>
-                  </button>
-                </section>
+                    )}
+                    
+                    <section className="info-section">
+                      <div className="background-design">
+                        <div className="circle" />
+                        <div className="circle" />
+                        <div className="circle" />
+                      </div>
+                      <div className="left-side">
+                        <div className="weather">
+                          <div>
+                            <svg stroke="#ffffff" fill="#ffffff" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+                              <g strokeWidth={0} id="SVGRepo_bgCarrier" />
+                              <g strokeLinejoin="round" strokeLinecap="round" id="SVGRepo_tracerCarrier" />
+                              <g id="SVGRepo_iconCarrier">
+                                <path d="M512 704a192 192 0 1 0 0-384 192 192 0 0 0 0 384zm0 64a256 256 0 1 1 0-512 256 256 0 0 1 0 512zm0-704a32 32 0 0 1 32 32v64a32 32 0 0 1-64 0V96a32 32 0 0 1 32-32zm0 768a32 32 0 0 1 32 32v64a32 32 0 1 1-64 0v-64a32 32 0 0 1 32-32zM195.2 195.2a32 32 0 0 1 45.248 0l45.248 45.248a32 32 0 1 1-45.248 45.248L195.2 240.448a32 32 0 0 1 0-45.248zm543.104 543.104a32 32 0 0 1 45.248 0l45.248 45.248a32 32 0 0 1-45.248 45.248l-45.248-45.248a32 32 0 0 1 0-45.248zM64 512a32 32 0 0 1 32-32h64a32 32 0 0 1 0 64H96a32 32 0 0 1-32-32zm768 0a32 32 0 0 1 32-32h64a32 32 0 1 1 0 64h-64a32 32 0 0 1-32-32zM195.2 828.8a32 32 0 0 1 0-45.248l45.248-45.248a32 32 0 0 1 45.248 45.248L240.448 828.8a32 32 0 0 1-45.248 0zm543.104-543.104a32 32 0 0 1 0-45.248l45.248-45.248a32 32 0 0 1 45.248 45.248l-45.248 45.248a32 32 0 0 1-45.248 0z" fill="#ffffff" />
+                              </g>
+                            </svg>
+                          </div>
+                          <div>{weatherData ? weatherData.current.weather[0].description : 'Ensolarado'}</div>
+                        </div>
+                        <div className="temperature">
+                          {weatherData ? Math.round(weatherData.current.main.temp) : '36'}°
+                        </div>
+                        <div className="range">
+                          {weatherData 
+                            ? `Max: ${Math.round(weatherData.current.main.temp_max)}° Min: ${Math.round(weatherData.current.main.temp_min)}°`
+                            : 'Max: 42° Min: 28°'
+                          }
+                        </div>
+                        <div className="humidity">
+                          💧 Humidade: {weatherData ? weatherData.current.main.humidity : '65'}%
+                        </div>
+                        <div className="wind">
+                          💨 Vento: {weatherData ? Math.round(weatherData.current.wind.speed * 3.6) : '12'} km/h
+                        </div>
+                      </div>
+                      <div className="right-side">
+                        <div>
+                          <div className="hour">{formatTime()}</div>
+                          <div className="date">{formatDate()}</div>
+                        </div>
+                        <div className="city">
+                          {weatherData 
+                            ? `${weatherData.current.name}, ${weatherData.current.sys.country}` 
+                            : 'Luanda, AO'
+                          }
+                        </div>
+                        <div className="quality">
+                          🌍 Qualidade do Ar: {weatherData 
+                            ? getAirQualityText(weatherData.airQuality.list[0].main.aqi)
+                            : 'Boa'
+                          }
+                        </div>
+                      </div>
+                    </section>
+                    <section className="days-section">
+                      {weatherData ? (
+                        getForecastByDay().map((day, index) => (
+                          <button key={index}>
+                            <span className="day">{getDayName(day.dt_txt)}</span>
+                            <span className="icon-weather-day">
+                              <span style={{ fontSize: '20px' }}>{getWeatherIcon(day.weather[0].id)}</span>
+                            </span>
+                          </button>
+                        ))
+                      ) : (
+                        <>
+                          <button>
+                            <span className="day">TER</span>
+                            <span className="icon-weather-day">
+                              <span style={{ fontSize: '20px' }}>☀️</span>
+                            </span>
+                          </button>
+                          <button>
+                            <span className="day">QUA</span>
+                            <span className="icon-weather-day">
+                              <span style={{ fontSize: '20px' }}>🌧️</span>
+                            </span>
+                          </button>
+                          <button>
+                            <span className="day">QUI</span>
+                            <span className="icon-weather-day">
+                              <span style={{ fontSize: '20px' }}>🌧️</span>
+                            </span>
+                          </button>
+                          <button>
+                            <span className="day">SEX</span>
+                            <span className="icon-weather-day">
+                              <span style={{ fontSize: '20px' }}>☀️</span>
+                            </span>
+                          </button>
+                        </>
+                      )}
+                    </section>
+                  </>
+                )}
               </div>
             </StyledWrapper>
           </div>
@@ -298,6 +441,34 @@ const StyledWrapper = styled.div`
     overflow: hidden;
     transition: 100ms ease;
     box-shadow: rgba(0, 0, 0, 0.15) 2px 3px 4px;
+    position: relative;
+  }
+
+  .error-banner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 193, 7, 0.95);
+    color: #856404;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    z-index: 10;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 193, 7, 0.3);
+  }
+
+  .error-icon {
+    font-size: 14px;
+  }
+
+  .error-text {
+    font-weight: 600;
   }
 
   .info-section {
