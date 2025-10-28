@@ -318,6 +318,7 @@ const StyledWrapper = styled.div`
     height: 100%;
     z-index: 1;
     padding-left: 24px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 
   button {
@@ -373,6 +374,7 @@ const StyledWrapper = styled.div`
     height: 100%;
     padding-right: 24px;
     z-index: 1;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 
   .right-side > div {
@@ -409,42 +411,58 @@ const StyledWrapper = styled.div`
     position: absolute;
     height: 100%;
     width: 100%;
-    background-color: #ec7263;
+    background: linear-gradient(135deg, #d63447 0%, #c42d3e 50%, #b02635 100%);
     overflow: hidden;
   }
 
   .circle {
-    background-color: #efc745;
+    background: radial-gradient(circle, #ffb347 0%, #ffa040 30%, #ff8c42 60%, transparent 100%);
+    animation: pulse 4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 0.4;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 0.6;
+    }
   }
 
   .circle:nth-child(1) {
     position: absolute;
-    top: -80%;
-    right: -50%;
-    width: 300px;
-    height: 300px;
-    opacity: 0.4;
+    top: -60%;
+    right: -35%;
+    width: 450px;
+    height: 450px;
+    opacity: 0.35;
     border-radius: 50%;
+    animation-delay: 0s;
   }
 
   .circle:nth-child(2) {
     position: absolute;
-    top: -70%;
-    right: -30%;
-    width: 210px;
-    height: 210px;
-    opacity: 0.4;
+    top: -40%;
+    right: -15%;
+    width: 320px;
+    height: 320px;
+    opacity: 0.45;
     border-radius: 50%;
+    animation-delay: 1s;
   }
 
   .circle:nth-child(3) {
     position: absolute;
-    top: -35%;
-    right: -8%;
-    width: 100px;
-    height: 100px;
-    opacity: 1;
+    top: -10%;
+    right: 5%;
+    width: 180px;
+    height: 180px;
+    opacity: 0.7;
     border-radius: 50%;
+    box-shadow: 0 0 60px rgba(255, 179, 71, 0.5), 0 0 100px rgba(255, 160, 64, 0.3);
+    animation-delay: 2s;
   }
 
   .days-section {
