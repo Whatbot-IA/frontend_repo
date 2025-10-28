@@ -9,27 +9,27 @@ function Sidebar() {
     {
       name: 'Dashboard',
       path: '/dashboard',
-      icon: '📊'
+      icon: '/icon/dashboard.png'
     },
     {
       name: 'Instâncias',
       path: '/instances',
-      icon: '📱'
+      icon: '/icon/instance.png'
     },
     {
       name: 'Lojas',
       path: '/stores',
-      icon: '🏪'
+      icon: '/icon/store.png'
     },
     {
       name: 'Definições',
       path: '/settings',
-      icon: '⚙️'
+      icon: '/icon/setting.png'
     },
     {
       name: 'Planos',
       path: '/plans',
-      icon: '💳'
+      icon: '/icon/plan.png'
     }
   ]
 
@@ -55,12 +55,12 @@ function Sidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-screen bg-gray-900 text-white transition-transform duration-300 z-40 ${
+        className={`fixed top-0 left-0 h-screen bg-gray-50 text-gray-900 transition-transform duration-300 z-40 shadow-xl ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         } w-64`}
       >
         {/* Logo */}
-        <div className="p-6 border-b border-gray-800">
+        <div className="p-6 border-b border-gray-200">
           <Link to="/dashboard" className="flex items-center gap-3">
             <img src="/logo.png" alt="Whatbot Logo" className="w-10 h-10" />
             <span className="text-xl font-bold">Whatbot</span>
@@ -78,10 +78,14 @@ function Sidebar() {
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                     isActive(item.path)
                       ? 'bg-whatsapp-primary text-white shadow-lg'
-                      : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                      : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
                   }`}
                 >
-                  <span className="text-2xl">{item.icon}</span>
+                  {item.icon.startsWith('/') ? (
+                    <img src={item.icon} alt={item.name} className="w-6 h-6" />
+                  ) : (
+                    <span className="text-2xl">{item.icon}</span>
+                  )}
                   <span className="font-medium">{item.name}</span>
                 </Link>
               </li>
@@ -90,21 +94,21 @@ function Sidebar() {
         </nav>
 
         {/* User Info */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-800">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
           <div className="flex items-center gap-3 px-4 py-3">
-            <div className="w-10 h-10 bg-whatsapp-primary rounded-full flex items-center justify-center font-bold">
+            <div className="w-10 h-10 bg-whatsapp-primary rounded-full flex items-center justify-center font-bold text-white">
               U
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-sm">Usuário</p>
-              <p className="text-xs text-gray-400">usuario@email.com</p>
+              <p className="font-semibold text-sm text-gray-900">Usuário</p>
+              <p className="text-xs text-gray-500">usuario@email.com</p>
             </div>
             <Link
               to="/login"
-              className="text-gray-400 hover:text-red-400 transition"
+              className="hover:opacity-70 transition"
               title="Sair"
             >
-              🚪
+              <img src="/icon/exit.png" alt="Sair" className="w-5 h-5" />
             </Link>
           </div>
         </div>
