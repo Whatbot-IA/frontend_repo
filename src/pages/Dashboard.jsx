@@ -8,6 +8,9 @@ function Dashboard() {
   const [weatherData, setWeatherData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  
+  // Estado para hora e data atual
+  const [currentTime, setCurrentTime] = useState(new Date())
 
   // Dados de exemplo (posteriormente virão da API)
   const stats = {
@@ -19,6 +22,15 @@ function Dashboard() {
 
   const notifications = 5 // Número de notificações pendentes
   const userName = 'Hudson' // Nome do usuário (virá da API/contexto)
+
+  // Atualizar hora a cada segundo
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
+    
+    return () => clearInterval(timer)
+  }, [])
 
   // Buscar dados do clima
   useEffect(() => {
@@ -97,14 +109,12 @@ function Dashboard() {
   }
 
   const formatTime = () => {
-    const now = new Date()
-    return now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    return currentTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   }
 
   const formatDate = () => {
-    const now = new Date()
     const days = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB']
-    return `${days[now.getDay()]} ${now.getDate().toString().padStart(2, '0')}-${(now.getMonth() + 1).toString().padStart(2, '0')}`
+    return `${days[currentTime.getDay()]} ${currentTime.getDate().toString().padStart(2, '0')}-${(currentTime.getMonth() + 1).toString().padStart(2, '0')}`
   }
 
   const getDayName = (dateString) => {
