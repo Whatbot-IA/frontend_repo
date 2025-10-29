@@ -286,7 +286,7 @@ function Dashboard() {
                   </div>
                 </div>
                 <h3 className="text-gray-600 font-semibold">Contas Conectadas</h3>
-                <p className="text-sm text-gray-400 mt-1">WhatsApp Business</p>
+                <p className="text-sm text-gray-400 mt-1">WhatsApp</p>
               </div>
 
               {/* Open Chats */}

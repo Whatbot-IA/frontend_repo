@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import styled from 'styled-components'
 
 function Home() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -248,18 +249,24 @@ function Home() {
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
-              { num: '1', title: 'Conecte seu WhatsApp', desc: 'Conecte suas contas WhatsApp Business de forma segura em minutos.' },
+              { num: '1', title: 'Conecte seu WhatsApp', desc: 'Conecte suas contas WhatsApp de forma segura em minutos.' },
               { num: '2', title: 'Configure a IA', desc: 'Integre sua loja virtual e personalize as respostas da IA.' },
               { num: '3', title: 'Venda Automaticamente', desc: 'A IA atende, vende e resolve dúvidas 24 horas por dia.' },
               { num: '4', title: 'Acompanhe Resultados', desc: 'Monitore vendas, conversões e desempenho em tempo real.' }
             ].map((step, index) => (
-              <div key={index} className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4 shadow-lg">
-                  {step.num}
+              <StyledWrapper key={index}>
+                <div className="card">
+                  <div className="content">
+                    <div className="front">
+                      <h3 className="title">{step.num}</h3>
+                      <p className="subtitle">{step.title}</p>
+                    </div>
+                    <div className="back">
+                      <p className="description">{step.desc}</p>
+                    </div>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold mb-3 text-gray-900">{step.title}</h3>
-                <p className="text-gray-600 leading-relaxed">{step.desc}</p>
-              </div>
+              </StyledWrapper>
             ))}
           </div>
         </div>
@@ -373,5 +380,78 @@ function Home() {
     </div>
   )
 }
+
+const StyledWrapper = styled.div`
+  .card {
+    width: 100%;
+    cursor: pointer;
+    height: 250px;
+  }
+
+  .content {
+    text-align: center;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: all 0.6s;
+    background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+    padding: 2em;
+    transform-style: preserve-3d;
+    border-radius: 1rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  }
+
+  .card:hover .content {
+    transform: rotateY(0.5turn);
+  }
+
+  .front,
+  .back {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    padding: 2em;
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1rem;
+  }
+
+  .title {
+    transform: translateZ(5rem);
+    font-size: 3rem;
+    font-weight: 800;
+    color: white;
+    margin: 0;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  .subtitle {
+    transform: translateZ(2rem);
+    font-size: 1.1rem;
+    color: white;
+    margin-top: 1rem;
+    font-weight: 600;
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+  }
+
+  .back {
+    transform: rotateY(0.5turn);
+    background: linear-gradient(135deg, #128C7E 0%, #075E54 100%);
+  }
+
+  .description {
+    transform: translateZ(3rem);
+    color: white;
+    font-size: 1rem;
+    line-height: 1.6;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+`;
 
 export default Home
