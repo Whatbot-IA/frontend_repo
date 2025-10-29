@@ -167,8 +167,8 @@ function Dashboard() {
 
         {/* Stats Cards */}
         <div className="flex flex-col lg:flex-row gap-6 mb-8">
-          {/* Left Side - Large Card */}
-          <div className="flex-1 lg:w-1/2">
+          {/* Left Side - Large Card - Hidden on mobile */}
+          <div className="hidden lg:block flex-1 lg:w-1/2">
             <StyledWrapper>
               <div className="card">
                 {loading ? (
