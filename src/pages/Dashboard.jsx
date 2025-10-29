@@ -333,7 +333,7 @@ function Dashboard() {
           {/* Top Products */}
           <div className="bg-white rounded-2xl shadow-lg p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <span>🏆</span>
+              <img src="/icon/stars.png" alt="Product rank" className="w-10 h-10" />
               Produtos Mais Requisitados
             </h2>
             <div className="space-y-4">
@@ -362,7 +362,7 @@ function Dashboard() {
           {/* Recent Activity */}
           <div className="bg-white rounded-2xl shadow-lg p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <span>🕒</span>
+              <img src="/icon/history.png" alt="Phone" className="w-5 h-5" />
               Atividade Recente
             </h2>
             <div className="space-y-4">
@@ -384,26 +384,26 @@ function Dashboard() {
         {/* Quick Actions */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-            <span>⚡</span>
+            <img src="/icon/flash-path.png" alt="Phone" className="w-10 h-10" />
             Ações Rápidas
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <button className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-whatsapp-primary hover:bg-whatsapp-primary/5 transition-all">
-              <span className="text-3xl">➕</span>
+              <img src="/icon/whatsapp.png" alt="WhatsApp" className="w-5 h-5" />
               <div className="text-left">
                 <p className="font-semibold text-gray-900">Nova Instância</p>
                 <p className="text-sm text-gray-500">Conectar WhatsApp</p>
               </div>
             </button>
             <button className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-500/5 transition-all">
-              <span className="text-3xl">🏪</span>
+              <img src="/icon/store.png" alt="Loja" className="w-5 h-5" />
               <div className="text-left">
                 <p className="font-semibold text-gray-900">Adicionar Loja</p>
                 <p className="text-sm text-gray-500">Integrar produtos</p>
               </div>
             </button>
             <button className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-500/5 transition-all">
-              <span className="text-3xl">📊</span>
+              <img src="/icon/report-flash.png" alt="Relatórios" className="w-5 h-5" />
               <div className="text-left">
                 <p className="font-semibold text-gray-900">Ver Relatórios</p>
                 <p className="text-sm text-gray-500">Análise detalhada</p>
