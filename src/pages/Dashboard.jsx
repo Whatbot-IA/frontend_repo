@@ -25,8 +25,8 @@ function Dashboard() {
     const fetchWeatherData = async () => {
       try {
         setLoading(true)
-        // API Key da OpenWeatherMap (configure no arquivo .env)
-        const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY
+        // API Key da WeatherAPI (configure no arquivo .env)
+        const API_KEY = import.meta.env.VITE_WEATHER_API_KEY
         const city = import.meta.env.VITE_WEATHER_CITY || 'Luanda'
         const country = import.meta.env.VITE_WEATHER_COUNTRY || 'AO'
         
@@ -36,31 +36,25 @@ function Dashboard() {
           return
         }
         
-        // Buscar clima atual
-        const currentWeather = await axios.get(
-          `https://api.openweathermap.org/data/2.5/weather?q=${city},${country}&appid=${API_KEY}&units=metric&lang=pt`
-        )
+        // WeatherAPI - Forecast (inclui current, forecast e air quality)
+        // Formato: city,country ou apenas city
+        const location = country ? `${city},${country}` : city
         
-        // Buscar previsão dos próximos dias
-        const forecast = await axios.get(
-          `https://api.openweathermap.org/data/2.5/forecast?q=${city},${country}&appid=${API_KEY}&units=metric&lang=pt`
+        const response = await axios.get(
+          `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${location}&days=5&aqi=yes&lang=pt`
         )
 
-        // Buscar qualidade do ar
-        const airQuality = await axios.get(
-          `https://api.openweathermap.org/data/2.5/air_pollution?lat=${currentWeather.data.coord.lat}&lon=${currentWeather.data.coord.lon}&appid=${API_KEY}`
-        )
-
-        setWeatherData({
-          current: currentWeather.data,
-          forecast: forecast.data,
-          airQuality: airQuality.data
-        })
+        setWeatherData(response.data)
         setError(null)
       } catch (err) {
         console.error('Erro ao buscar dados do clima:', err)
-        setError('Não foi possível carregar os dados do clima')
-        // Manter dados de exemplo em caso de erro
+        if (err.response?.status === 401) {
+          setError('Chave da API inválida')
+        } else if (err.response?.status === 400) {
+          setError('Localização não encontrada')
+        } else {
+          setError('Não foi possível carregar os dados do clima')
+        }
       } finally {
         setLoading(false)
       }
@@ -73,29 +67,33 @@ function Dashboard() {
   }, [])
 
   // Funções auxiliares
-  const getWeatherIcon = (weatherCode) => {
-    // Códigos da OpenWeatherMap
-    if (weatherCode >= 200 && weatherCode < 300) return '⛈️' // Trovoada
-    if (weatherCode >= 300 && weatherCode < 400) return '🌧️' // Chuvisco
-    if (weatherCode >= 500 && weatherCode < 600) return '🌧️' // Chuva
-    if (weatherCode >= 600 && weatherCode < 700) return '❄️' // Neve
-    if (weatherCode >= 700 && weatherCode < 800) return '🌫️' // Atmosférico
-    if (weatherCode === 800) return '☀️' // Céu limpo
-    if (weatherCode === 801) return '🌤️' // Poucas nuvens
-    if (weatherCode === 802) return '⛅' // Nuvens dispersas
-    if (weatherCode === 803 || weatherCode === 804) return '☁️' // Muito nublado
+  const getWeatherIcon = (condition) => {
+    // WeatherAPI retorna condition.text em português
+    const text = condition?.text?.toLowerCase() || ''
+    
+    if (text.includes('sol') || text.includes('limpo') || text.includes('clear')) return '☀️'
+    if (text.includes('nublado') || text.includes('nuvens') || text.includes('cloud')) return '☁️'
+    if (text.includes('parcialmente')) return '⛅'
+    if (text.includes('chuva') || text.includes('rain')) return '🌧️'
+    if (text.includes('trovoada') || text.includes('tempestade') || text.includes('thunder')) return '⛈️'
+    if (text.includes('neve') || text.includes('snow')) return '❄️'
+    if (text.includes('nevoeiro') || text.includes('névoa') || text.includes('fog') || text.includes('mist')) return '🌫️'
+    if (text.includes('garoa') || text.includes('drizzle')) return '🌦️'
+    
     return '🌤️'
   }
 
-  const getAirQualityText = (aqi) => {
+  const getAirQualityText = (usEpaIndex) => {
+    // WeatherAPI usa US EPA standard
     const qualityLevels = {
       1: 'Excelente',
       2: 'Boa',
       3: 'Moderada',
       4: 'Ruim',
-      5: 'Muito Ruim'
+      5: 'Muito Ruim',
+      6: 'Perigosa'
     }
-    return qualityLevels[aqi] || 'Não disponível'
+    return qualityLevels[usEpaIndex] || 'Não disponível'
   }
 
   const formatTime = () => {
@@ -115,19 +113,11 @@ function Dashboard() {
     return days[date.getDay()]
   }
 
-  // Agrupar previsões por dia
-  const getForecastByDay = () => {
-    if (!weatherData?.forecast?.list) return []
-    
-    const dailyForecasts = {}
-    weatherData.forecast.list.forEach(item => {
-      const date = item.dt_txt.split(' ')[0]
-      if (!dailyForecasts[date]) {
-        dailyForecasts[date] = item
-      }
-    })
-    
-    return Object.values(dailyForecasts).slice(1, 5) // Próximos 4 dias
+  // Pegar próximos 4 dias da previsão (WeatherAPI já retorna por dia)
+  const getForecastDays = () => {
+    if (!weatherData?.forecast?.forecastday) return []
+    // Pular o primeiro dia (hoje) e pegar os próximos 4
+    return weatherData.forecast.forecastday.slice(1, 5)
   }
 
   const topProducts = [
@@ -202,22 +192,22 @@ function Dashboard() {
                               </g>
                             </svg>
                           </div>
-                          <div>{weatherData ? weatherData.current.weather[0].description : 'Ensolarado'}</div>
+                          <div>{weatherData ? weatherData.current.condition.text : 'Ensolarado'}</div>
                         </div>
                         <div className="temperature">
-                          {weatherData ? Math.round(weatherData.current.main.temp) : '36'}°
+                          {weatherData ? Math.round(weatherData.current.temp_c) : '36'}°
                         </div>
                         <div className="range">
                           {weatherData 
-                            ? `Max: ${Math.round(weatherData.current.main.temp_max)}° Min: ${Math.round(weatherData.current.main.temp_min)}°`
+                            ? `Max: ${Math.round(weatherData.forecast.forecastday[0].day.maxtemp_c)}° Min: ${Math.round(weatherData.forecast.forecastday[0].day.mintemp_c)}°`
                             : 'Max: 42° Min: 28°'
                           }
                         </div>
                         <div className="humidity">
-                          💧 Humidade: {weatherData ? weatherData.current.main.humidity : '65'}%
+                          💧 Humidade: {weatherData ? weatherData.current.humidity : '65'}%
                         </div>
                         <div className="wind">
-                          💨 Vento: {weatherData ? Math.round(weatherData.current.wind.speed * 3.6) : '12'} km/h
+                          💨 Vento: {weatherData ? Math.round(weatherData.current.wind_kph) : '12'} km/h
                         </div>
                       </div>
                       <div className="right-side">
@@ -227,13 +217,13 @@ function Dashboard() {
                         </div>
                         <div className="city">
                           {weatherData 
-                            ? `${weatherData.current.name}, ${weatherData.current.sys.country}` 
+                            ? `${weatherData.location.name}, ${weatherData.location.country}` 
                             : 'Luanda, AO'
                           }
                         </div>
                         <div className="quality">
-                          🌍 Qualidade do Ar: {weatherData 
-                            ? getAirQualityText(weatherData.airQuality.list[0].main.aqi)
+                           Qualidade do Ar: {weatherData 
+                            ? getAirQualityText(weatherData.current.air_quality?.['us-epa-index'])
                             : 'Boa'
                           }
                         </div>
@@ -241,11 +231,11 @@ function Dashboard() {
                     </section>
                     <section className="days-section">
                       {weatherData ? (
-                        getForecastByDay().map((day, index) => (
+                        getForecastDays().map((day, index) => (
                           <button key={index}>
-                            <span className="day">{getDayName(day.dt_txt)}</span>
+                            <span className="day">{getDayName(day.date)}</span>
                             <span className="icon-weather-day">
-                              <span style={{ fontSize: '20px' }}>{getWeatherIcon(day.weather[0].id)}</span>
+                              <span style={{ fontSize: '20px' }}>{getWeatherIcon(day.day.condition)}</span>
                             </span>
                           </button>
                         ))
@@ -290,8 +280,8 @@ function Dashboard() {
               {/* Connected Accounts */}
               <div className="bg-white rounded-2xl shadow-lg p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="text-4xl">📱</div>
-                  <div className="text-3xl font-bold text-whatsapp-primary">
+                  <img src="/icon/phone.png" alt="Phone" className="w-10 h-10" />
+                  <div className="text-3xl font-bold">
                     {stats.connectedAccounts}
                   </div>
                 </div>
@@ -302,8 +292,8 @@ function Dashboard() {
               {/* Open Chats */}
               <div className="bg-white rounded-2xl shadow-lg p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="text-4xl">💬</div>
-                  <div className="text-3xl font-bold text-blue-500">
+                  <img src="/icon/chat.png" alt="Chat" className="w-10 h-10" />
+                  <div className="text-3xl font-bold">
                     {stats.openChats}
                   </div>
                 </div>
@@ -314,8 +304,8 @@ function Dashboard() {
               {/* Total Messages */}
               <div className="bg-white rounded-2xl shadow-lg p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="text-4xl">📨</div>
-                  <div className="text-3xl font-bold text-purple-500">
+                  <img src="/icon/message.png" alt="Message" className="w-10 h-10" />
+                  <div className="text-3xl font-bold ">
                     {stats.totalMessages}
                   </div>
                 </div>
@@ -326,8 +316,8 @@ function Dashboard() {
               {/* Total Contacts */}
               <div className="bg-white rounded-2xl shadow-lg p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="text-4xl">👥</div>
-                  <div className="text-3xl font-bold text-orange-500">
+                  <img src="/icon/contact.png" alt="Contact" className="w-10 h-10" />
+                  <div className="text-3xl font-bold">
                     {stats.totalContacts}
                   </div>
                 </div>

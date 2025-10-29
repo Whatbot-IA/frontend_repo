@@ -1,16 +1,16 @@
 # 🌤️ Configuração da API de Clima
 
-O dashboard do Zapbot utiliza a API OpenWeatherMap para exibir dados meteorológicos em tempo real.
+O dashboard do Zapbot utiliza a **WeatherAPI.com** para exibir dados meteorológicos em tempo real.
 
 ## 📝 Passo a Passo para Configurar
 
 ### 1. Obter Chave da API (Gratuita)
 
-1. Acesse: https://openweathermap.org/api
-2. Clique em "Sign Up" (Cadastrar)
-3. Crie uma conta gratuita
-4. Após confirmar o email, acesse "API keys"
-5. Copie sua chave API (ex: `a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6`)
+1. Acesse: https://www.weatherapi.com/signup.aspx
+2. Preencha o formulário de cadastro
+3. Confirme seu email
+4. Acesse o dashboard e copie sua **API Key**
+5. A chave estará visível em: https://www.weatherapi.com/my/
 
 ### 2. Configurar o Projeto
 
@@ -21,7 +21,7 @@ O dashboard do Zapbot utiliza a API OpenWeatherMap para exibir dados meteorológ
 
 2. Abra o arquivo `.env` e cole sua chave:
    ```env
-   VITE_OPENWEATHER_API_KEY=sua_chave_api_real_aqui
+   VITE_WEATHER_API_KEY=sua_chave_api_real_aqui
    VITE_WEATHER_CITY=Luanda
    VITE_WEATHER_COUNTRY=AO
    ```
@@ -39,32 +39,58 @@ VITE_WEATHER_CITY=Lisboa
 VITE_WEATHER_COUNTRY=PT
 ```
 
+Ou use apenas o nome da cidade:
+```env
+VITE_WEATHER_CITY=São Paulo
+```
+
 ## 📊 Dados Exibidos
 
 O card de clima mostra:
 - ✅ Temperatura atual
-- ✅ Temperaturas máxima e mínima
-- ✅ Descrição do clima (ensolarado, nublado, etc.)
-- ✅ Humidade do ar
-- ✅ Velocidade do vento
-- ✅ Qualidade do ar (AQI)
-- ✅ Previsão para os próximos 4 dias
+- ✅ Temperaturas máxima e mínima do dia
+- ✅ Descrição do clima em português (ensolarado, nublado, etc.)
+- ✅ Humidade do ar (%)
+- ✅ Velocidade do vento (km/h)
+- ✅ Qualidade do ar (US EPA Index)
+- ✅ Previsão para os próximos 4 dias com emojis
 - ✅ Hora e data atualizadas em tempo real
+- ✅ Localização completa (cidade, país)
 
 ## ⚡ Modo Fallback
 
-Se a API não estiver configurada ou houver erro, o sistema exibe automaticamente dados de exemplo para que o dashboard continue funcionando.
+Se a API não estiver configurada ou houver erro, o sistema:
+- 🔔 Exibe banner amarelo discreto no topo
+- 📊 Mostra dados de exemplo para manter o layout
+- ⏰ Mantém hora e data reais atualizadas
 
 ## 🔄 Atualização Automática
 
 Os dados são atualizados automaticamente a cada **10 minutos** enquanto o dashboard estiver aberto.
 
-## 💡 Plano Gratuito OpenWeatherMap
+## 💡 Plano Gratuito WeatherAPI
 
-- ✅ 1.000 chamadas por dia
-- ✅ Dados atuais e previsão
+- ✅ **1 milhão de chamadas por mês** (muito mais que OpenWeatherMap!)
+- ✅ Dados atuais e previsão de 3 dias
+- ✅ Qualidade do ar incluída
+- ✅ Dados em português (lang=pt)
 - ✅ Sem necessidade de cartão de crédito
 - ✅ Ativação instantânea da chave API
+
+## 🆚 Vantagens sobre OpenWeatherMap
+
+1. **Mais chamadas gratuitas**: 1M/mês vs 1000/dia
+2. **Dados mais simples**: Uma única requisição para tudo
+3. **Melhor suporte a idiomas**: Português incluído nativamente
+4. **JSON mais limpo**: Estrutura mais fácil de trabalhar
+5. **Air Quality incluso**: Não precisa de chamada separada
+
+## 🔗 Links Úteis
+
+- **Documentação**: https://www.weatherapi.com/docs/
+- **Dashboard**: https://www.weatherapi.com/my/
+- **Signup**: https://www.weatherapi.com/signup.aspx
+- **API Explorer**: https://www.weatherapi.com/api-explorer.aspx
 
 ---
 
