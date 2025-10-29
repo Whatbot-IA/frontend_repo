@@ -150,7 +150,7 @@ function Dashboard() {
       <Sidebar />
 
       {/* Main Content */}
-      <main className="flex-1 lg:ml-64 p-8">
+      <main className="flex-1 lg:ml-64 p-8 pt-20 lg:pt-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-extrabold text-gray-900 mb-2">

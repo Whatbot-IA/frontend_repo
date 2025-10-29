@@ -42,25 +42,27 @@ function Sidebar() {
 
   return (
     <>
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 bg-whatsapp-primary text-white p-3 rounded-lg shadow-lg"
-      >
-        {isOpen ? '✕' : '☰'}
-      </button>
+      {/* Mobile Menu Button - Only show when closed */}
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="lg:hidden fixed top-4 left-4 z-[60] bg-whatsapp-primary text-white p-3 rounded-lg shadow-lg"
+        >
+          ☰
+        </button>
+      )}
 
       {/* Overlay for mobile */}
       {isOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-30"
+          className="lg:hidden fixed inset-0 bg-black/50 z-[45]"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-screen bg-gray-50 text-gray-900 transition-transform duration-300 z-40 shadow-xl ${
+        className={`fixed top-0 left-0 h-screen bg-gray-50 text-gray-900 transition-transform duration-300 z-[50] shadow-xl ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         } w-64`}
       >
