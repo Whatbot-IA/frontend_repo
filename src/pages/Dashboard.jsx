@@ -288,51 +288,67 @@ function Dashboard() {
           <div className="flex-1 lg:w-1/2">
             <div className="grid grid-cols-2 gap-4 h-full">
               {/* Connected Accounts */}
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <img src="/icon/phone.png" alt="Phone" className="w-10 h-10" />
-                  <div className="text-3xl font-bold">
-                    {stats.connectedAccounts}
+              <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <img src="/icon/phone.png" alt="Phone" className="w-8 h-8 flex-shrink-0" />
+                    <div className="text-2xl sm:text-3xl font-bold text-whatsapp-primary">
+                      {stats.connectedAccounts}
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-gray-600 font-semibold text-sm sm:text-base">Contas Conectadas</h3>
+                    <p className="text-xs sm:text-sm text-gray-400 mt-1">WhatsApp</p>
                   </div>
                 </div>
-                <h3 className="text-gray-600 font-semibold">Contas Conectadas</h3>
-                <p className="text-sm text-gray-400 mt-1">WhatsApp</p>
               </div>
 
               {/* Open Chats */}
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <img src="/icon/chat.png" alt="Chat" className="w-10 h-10" />
-                  <div className="text-3xl font-bold">
-                    {stats.openChats}
+              <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <img src="/icon/chat.png" alt="Chat" className="w-8 h-8 flex-shrink-0" />
+                    <div className="text-2xl sm:text-3xl font-bold text-blue-500">
+                      {stats.openChats}
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-gray-600 font-semibold text-sm sm:text-base">Chats Abertos</h3>
+                    <p className="text-xs sm:text-sm text-gray-400 mt-1">Conversas ativas</p>
                   </div>
                 </div>
-                <h3 className="text-gray-600 font-semibold">Chats Abertos</h3>
-                <p className="text-sm text-gray-400 mt-1">Conversas ativas</p>
               </div>
 
               {/* Total Messages */}
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <img src="/icon/message.png" alt="Message" className="w-10 h-10" />
-                  <div className="text-3xl font-bold ">
-                    {stats.totalMessages}
+              <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <img src="/icon/message.png" alt="Message" className="w-8 h-8 flex-shrink-0" />
+                    <div className="text-2xl sm:text-3xl font-bold text-purple-500">
+                      {stats.totalMessages}
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-gray-600 font-semibold text-sm sm:text-base">Total de Mensagens</h3>
+                    <p className="text-xs sm:text-sm text-gray-400 mt-1">Últimas 24 horas</p>
                   </div>
                 </div>
-                <h3 className="text-gray-600 font-semibold">Total de Mensagens</h3>
-                <p className="text-sm text-gray-400 mt-1">Últimas 24 horas</p>
               </div>
 
               {/* Total Contacts */}
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <img src="/icon/contact.png" alt="Contact" className="w-10 h-10" />
-                  <div className="text-3xl font-bold">
-                    {stats.totalContacts}
+              <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <img src="/icon/contact.png" alt="Contact" className="w-8 h-8 flex-shrink-0" />
+                    <div className="text-2xl sm:text-3xl font-bold text-orange-500">
+                      {stats.totalContacts}
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-gray-600 font-semibold text-sm sm:text-base">Total de Contatos</h3>
+                    <p className="text-xs sm:text-sm text-gray-400 mt-1">Base de clientes</p>
                   </div>
                 </div>
-                <h3 className="text-gray-600 font-semibold">Total de Contatos</h3>
-                <p className="text-sm text-gray-400 mt-1">Base de clientes</p>
               </div>
             </div>
           </div>
