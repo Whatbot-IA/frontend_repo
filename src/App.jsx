@@ -7,6 +7,9 @@ import SignIn from './pages/SignIn'
 import ResetPass from './pages/resetPass'
 import Dashboard from './pages/Dashboard'
 import Instances from './pages/Instances'
+import Stores from './pages/Stores'
+import StoreDetail from './pages/StoreDetail'
+import Chat from './pages/Chat'
 
 function App() {
   const [loading, setLoading] = useState(true)
@@ -34,6 +37,9 @@ function App() {
         <Route path="/reset-password" element={<ResetPass />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/instances" element={<Instances />} />
+        <Route path="/instances/:instanceId/chat" element={<Chat />} />
+        <Route path="/stores" element={<Stores />} />
+        <Route path="/stores/:storeId" element={<StoreDetail />} />
       </Routes>
     </Router>
   )

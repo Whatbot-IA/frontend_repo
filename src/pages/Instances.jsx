@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import styled from 'styled-components'
 
 function Instances() {
+  const navigate = useNavigate()
   const [showAddModal, setShowAddModal] = useState(false)
   const [showInfoModal, setShowInfoModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -10,6 +12,87 @@ function Instances() {
 
   // Dados de exemplo (posteriormente virão da API)
   const instances = [
+    {
+      id: 'session-001',
+      sessionId: 'whatsapp-vendas-01',
+      status: 'connected',
+      phone: '+244 923 456 789',
+      name: 'Vendas Principal',
+      connectedAt: '2024-10-28 14:30',
+      lastActivity: '2024-10-30 10:15'
+    },
+    {
+      id: 'session-002',
+      sessionId: 'whatsapp-suporte-01',
+      status: 'disconnected',
+      phone: '+244 912 345 678',
+      name: 'Suporte Técnico',
+      connectedAt: '2024-10-25 09:20',
+      lastActivity: '2024-10-29 18:45'
+    },
+    {
+      id: 'session-003',
+      sessionId: 'whatsapp-marketing-01',
+      status: 'connected',
+      phone: '+244 934 567 890',
+      name: 'Marketing',
+      connectedAt: '2024-10-27 11:15',
+      lastActivity: '2024-10-30 09:30'
+    },
+    {
+      id: 'session-001',
+      sessionId: 'whatsapp-vendas-01',
+      status: 'connected',
+      phone: '+244 923 456 789',
+      name: 'Vendas Principal',
+      connectedAt: '2024-10-28 14:30',
+      lastActivity: '2024-10-30 10:15'
+    },
+    {
+      id: 'session-002',
+      sessionId: 'whatsapp-suporte-01',
+      status: 'disconnected',
+      phone: '+244 912 345 678',
+      name: 'Suporte Técnico',
+      connectedAt: '2024-10-25 09:20',
+      lastActivity: '2024-10-29 18:45'
+    },
+    {
+      id: 'session-003',
+      sessionId: 'whatsapp-marketing-01',
+      status: 'connected',
+      phone: '+244 934 567 890',
+      name: 'Marketing',
+      connectedAt: '2024-10-27 11:15',
+      lastActivity: '2024-10-30 09:30'
+    },
+    {
+      id: 'session-001',
+      sessionId: 'whatsapp-vendas-01',
+      status: 'connected',
+      phone: '+244 923 456 789',
+      name: 'Vendas Principal',
+      connectedAt: '2024-10-28 14:30',
+      lastActivity: '2024-10-30 10:15'
+    },
+    {
+      id: 'session-002',
+      sessionId: 'whatsapp-suporte-01',
+      status: 'disconnected',
+      phone: '+244 912 345 678',
+      name: 'Suporte Técnico',
+      connectedAt: '2024-10-25 09:20',
+      lastActivity: '2024-10-29 18:45'
+    },
+    {
+      id: 'session-003',
+      sessionId: 'whatsapp-marketing-01',
+      status: 'connected',
+      phone: '+244 934 567 890',
+      name: 'Marketing',
+      connectedAt: '2024-10-27 11:15',
+      lastActivity: '2024-10-30 09:30'
+    },
     {
       id: 'session-001',
       sessionId: 'whatsapp-vendas-01',
@@ -151,6 +234,13 @@ function Instances() {
                           Info
                         </button>
                         <button
+                          onClick={() => navigate(`/instances/${instance.id}/chat`)}
+                          className="bg-whatsapp-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-whatsapp-secondary transition flex items-center gap-2"
+                        >
+                          <img src="/icon/chat-blue.png" alt="Chat" className="w-4 h-4" />
+                          Chat
+                        </button>
+                        <button
                           onClick={() => handleDelete(instance)}
                           className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600 transition flex items-center gap-2"
                         >
@@ -194,13 +284,20 @@ function Instances() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="grid grid-cols-2 gap-2 pt-2">
+                  <div className="grid grid-cols-3 gap-2 pt-2">
                     <button
                       onClick={() => handleViewInfo(instance)}
                       className="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition flex items-center justify-center gap-2"
                     >
                       <img src="/icon/info.png" alt="Info" className="w-4 h-4" />
                       Info
+                    </button>
+                    <button
+                      onClick={() => navigate(`/instances/${instance.id}/chat`)}
+                      className="bg-whatsapp-primary text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-whatsapp-secondary transition flex items-center justify-center gap-2"
+                    >
+                      <img src="/icon/chat.png" alt="Chat" className="w-4 h-4" />
+                      Chat
                     </button>
                     <button
                       onClick={() => handleDelete(instance)}
