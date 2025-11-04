@@ -10,6 +10,7 @@ import Instances from './pages/Instances'
 import Stores from './pages/Stores'
 import StoreDetail from './pages/StoreDetail'
 import Chat from './pages/Chat'
+import InstanceConfig from './pages/InstanceConfig'
 
 function App() {
   const [loading, setLoading] = useState(true)
@@ -38,6 +39,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/instances" element={<Instances />} />
         <Route path="/instances/:instanceId/chat" element={<Chat />} />
+        <Route path="/instances/:instanceId/config" element={<InstanceConfig />} />
         <Route path="/stores" element={<Stores />} />
         <Route path="/stores/:storeId" element={<StoreDetail />} />
       </Routes>

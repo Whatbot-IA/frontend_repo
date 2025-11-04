@@ -241,6 +241,13 @@ function Instances() {
                           Chat
                         </button>
                         <button
+                          onClick={() => navigate(`/instances/${instance.id}/config`)}
+                          className="bg-purple-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-600 transition flex items-center gap-2"
+                        >
+                          <img src="/icon/setting.png" alt="Config" className="w-4 h-4" />
+                          Config
+                        </button>
+                        <button
                           onClick={() => handleDelete(instance)}
                           className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600 transition flex items-center gap-2"
                         >
@@ -284,7 +291,7 @@ function Instances() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="grid grid-cols-3 gap-2 pt-2">
+                  <div className="grid grid-cols-4 gap-2 pt-2">
                     <button
                       onClick={() => handleViewInfo(instance)}
                       className="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition flex items-center justify-center gap-2"
@@ -298,6 +305,13 @@ function Instances() {
                     >
                       <img src="/icon/chat.png" alt="Chat" className="w-4 h-4" />
                       Chat
+                    </button>
+                    <button
+                      onClick={() => navigate(`/instances/${instance.id}/config`)}
+                      className="bg-purple-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-purple-600 transition flex items-center justify-center gap-2"
+                    >
+                      <img src="/icon/setting.png" alt="Config" className="w-4 h-4" />
+                      Config
                     </button>
                     <button
                       onClick={() => handleDelete(instance)}
