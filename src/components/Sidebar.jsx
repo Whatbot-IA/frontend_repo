@@ -27,9 +27,9 @@ function Sidebar() {
       icon: '/icon/setting.png'
     },
     {
-      name: 'Planos',
-      path: '/plans',
-      icon: '/icon/plan.png'
+      name: 'Relatórios',
+      path: '/reports',
+      icon: '/icon/report.png'
     },
     {
       name: 'Notificações',

@@ -11,6 +11,7 @@ import Stores from './pages/Stores'
 import StoreDetail from './pages/StoreDetail'
 import Chat from './pages/Chat'
 import InstanceConfig from './pages/InstanceConfig'
+import Settings from './pages/Settings'
 
 function App() {
   const [loading, setLoading] = useState(true)
@@ -42,6 +43,7 @@ function App() {
         <Route path="/instances/:instanceId/config" element={<InstanceConfig />} />
         <Route path="/stores" element={<Stores />} />
         <Route path="/stores/:storeId" element={<StoreDetail />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </Router>
   )
