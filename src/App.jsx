@@ -14,6 +14,7 @@ import InstanceConfig from './pages/InstanceConfig'
 import Settings from './pages/Settings'
 import Reports from './pages/Reports'
 import Contacts from './pages/Contacts'
+import Notifications from './pages/Notifications'
 
 function App() {
   const [loading, setLoading] = useState(true)
@@ -48,6 +49,7 @@ function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/contacts" element={<Contacts />} />
+        <Route path="/notifications" element={<Notifications />} />
       </Routes>
     </Router>
   )

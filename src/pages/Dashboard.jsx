@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import styled from 'styled-components'
 import axios from 'axios'
 
 function Dashboard() {
+  const navigate = useNavigate()
+  
   // Estado para dados do clima
   const [weatherData, setWeatherData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -414,21 +417,30 @@ function Dashboard() {
             Ações Rápidas
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-whatsapp-primary hover:bg-whatsapp-primary/5 transition-all">
+            <button 
+              onClick={() => navigate('/instances')}
+              className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-whatsapp-primary hover:bg-whatsapp-primary/5 transition-all"
+            >
               <img src="/icon/whatsapp.png" alt="WhatsApp" className="w-5 h-5" />
               <div className="text-left">
                 <p className="font-semibold text-gray-900">Nova Instância</p>
                 <p className="text-sm text-gray-500">Conectar WhatsApp</p>
               </div>
             </button>
-            <button className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-500/5 transition-all">
+            <button 
+              onClick={() => navigate('/stores')}
+              className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-500/5 transition-all"
+            >
               <img src="/icon/store.png" alt="Loja" className="w-5 h-5" />
               <div className="text-left">
                 <p className="font-semibold text-gray-900">Adicionar Loja</p>
                 <p className="text-sm text-gray-500">Integrar produtos</p>
               </div>
             </button>
-            <button className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-500/5 transition-all">
+            <button 
+              onClick={() => navigate('/reports')}
+              className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-500/5 transition-all"
+            >
               <img src="/icon/report-flash.png" alt="Relatórios" className="w-5 h-5" />
               <div className="text-left">
                 <p className="font-semibold text-gray-900">Ver Relatórios</p>
