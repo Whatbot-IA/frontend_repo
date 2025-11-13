@@ -32,6 +32,11 @@ function Sidebar() {
       icon: '/icon/report.png'
     },
     {
+      name: 'Contactos',
+      path: '/contacts',
+      icon: '/icon/contact.png'
+    },
+    {
       name: 'Notificações',
       path: '/notifications',
       icon: '/icon/notification.png'
