@@ -276,6 +276,48 @@ export const getDashboardStats = async () => {
   }
 }
 
+// ==================== IA MODELS ENDPOINTS ====================
+
+/**
+ * Buscar modelos de IA disponíveis
+ * @returns {Promise} Resposta da API
+ */
+export const getIAModels = async () => {
+  try {
+    const response = await api.get('/ia-models')
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao buscar modelos de IA',
+        status: error.response?.status
+      }
+    }
+  }
+}
+
+// ==================== SUBSCRIPTIONS ENDPOINTS ====================
+
+/**
+ * Buscar planos de assinatura disponíveis
+ * @returns {Promise} Resposta da API
+ */
+export const getSubscriptions = async () => {
+  try {
+    const response = await api.get('/subscriptions')
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao buscar planos de assinatura',
+        status: error.response?.status
+      }
+    }
+  }
+}
+
 // ==================== USER ENDPOINTS ====================
 
 /**
@@ -299,38 +341,20 @@ export const getUserProfile = async () => {
 /**
  * Atualizar perfil do usuário
  * @param {Object} userData - Dados a atualizar
+ * @param {string} [userData.full_name] - Nome completo (opcional)
+ * @param {string} [userData.contact_phone] - Telefone (opcional)
+ * @param {string} [userData.password] - Nova senha (opcional)
  * @returns {Promise} Resposta da API
  */
 export const updateUserProfile = async (userData) => {
   try {
-    const response = await api.put('/users/profile', userData)
+    const response = await api.patch('/users/profile', userData)
     return { success: true, data: response.data }
   } catch (error) {
     return {
       success: false,
       error: {
         message: error.response?.data?.message || 'Erro ao atualizar perfil'
-      }
-    }
-  }
-}
-
-/**
- * Alterar senha do usuário
- * @param {Object} passwords - Senhas
- * @param {string} passwords.currentPassword - Senha atual
- * @param {string} passwords.newPassword - Nova senha
- * @returns {Promise} Resposta da API
- */
-export const changePassword = async (passwords) => {
-  try {
-    const response = await api.put('/users/change-password', passwords)
-    return { success: true, data: response.data }
-  } catch (error) {
-    return {
-      success: false,
-      error: {
-        message: error.response?.data?.message || 'Erro ao alterar senha'
       }
     }
   }
