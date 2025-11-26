@@ -175,7 +175,7 @@ export const forgotPassword = async (email) => {
 }
 
 /**
- * Solicitar reset de senha (envia nova senha por email)
+ * Solicitar reset de senha (envia link com token por email)
  * @param {string} email - Email do usuário
  * @returns {Promise} Resposta da API
  */
@@ -187,7 +187,30 @@ export const resetPassword = async (email) => {
     return {
       success: false,
       error: {
-        message: error.response?.data?.message || 'Erro ao resetar senha',
+        message: error.response?.data?.message || 'Erro ao solicitar recuperação de senha',
+        status: error.response?.status
+      }
+    }
+  }
+}
+
+/**
+ * Confirmar reset de senha com token
+ * @param {Object} data - Dados para confirmação
+ * @param {string} data.id - ID do usuário
+ * @param {string} data.token - Token de recuperação
+ * @param {string} data.newPassword - Nova senha
+ * @returns {Promise} Resposta da API
+ */
+export const confirmResetPassword = async (data) => {
+  try {
+    const response = await api.post('/auth/reset-password-confirm', data)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao redefinir senha',
         status: error.response?.status
       }
     }

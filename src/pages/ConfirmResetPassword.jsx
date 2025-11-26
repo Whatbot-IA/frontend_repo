@@ -1,18 +1,33 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { resetPassword } from '../services/api'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { confirmResetPassword } from '../services/api'
 
-function ResetPass() {
+function ConfirmResetPassword() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   
   const [formData, setFormData] = useState({
-    email: ''
+    newPassword: '',
+    confirmPassword: ''
   })
 
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
   const [apiError, setApiError] = useState('')
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  // Extrair id e token da URL
+  const id = searchParams.get('id')
+  const token = searchParams.get('token')
+
+  useEffect(() => {
+    // Verificar se os parâmetros existem
+    if (!id || !token) {
+      setApiError('Link inválido ou expirado. Solicite uma nova recuperação de senha.')
+    }
+  }, [id, token])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -35,11 +50,18 @@ function ResetPass() {
   const validateForm = () => {
     const newErrors = {}
 
-    // Email validation
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email é obrigatório'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Email inválido'
+    // Password validation
+    if (!formData.newPassword) {
+      newErrors.newPassword = 'Senha é obrigatória'
+    } else if (formData.newPassword.length < 6) {
+      newErrors.newPassword = 'Senha deve ter pelo menos 6 caracteres'
+    }
+
+    // Confirm password validation
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Confirmação de senha é obrigatória'
+    } else if (formData.newPassword !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'As senhas não coincidem'
     }
 
     setErrors(newErrors)
@@ -49,23 +71,31 @@ function ResetPass() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
+    if (!id || !token) {
+      setApiError('Link inválido ou expirado.')
+      return
+    }
+
     if (!validateForm()) return
 
     try {
       setIsLoading(true)
       setApiError('')
       
-      const result = await resetPassword(formData.email)
+      const result = await confirmResetPassword({
+        id,
+        token,
+        newPassword: formData.newPassword
+      })
       
       if (result.success) {
-        // Mostrar modal de sucesso
         setShowSuccessModal(true)
       } else {
         // Tratar erros da API
-        if (result.error.status === 404) {
-          setApiError('Email não encontrado. Verifique e tente novamente.')
+        if (result.error.status === 400 || result.error.status === 404) {
+          setApiError('Token inválido ou expirado. Solicite uma nova recuperação.')
         } else {
-          setApiError(result.error.message || 'Erro ao enviar email de recuperação')
+          setApiError(result.error.message || 'Erro ao redefinir senha')
         }
       }
     } catch (error) {
@@ -87,10 +117,10 @@ function ResetPass() {
             <img src="/logo.png" alt="Whatbot Logo" className="w-16 h-16 mx-auto mb-3" />
           </Link>
           <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
-            Recuperar Senha
+            Redefinir Senha
           </h1>
           <p className="text-gray-600">
-            Digite seu email para receber instruções
+            Digite sua nova senha
           </p>
         </div>
 
@@ -103,34 +133,79 @@ function ResetPass() {
                 {apiError}
               </div>
             )}
-            {/* Email */}
+
+            {/* New Password */}
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Email
+              <label htmlFor="newPassword" className="block text-sm font-semibold text-gray-700 mb-1.5">
+                Nova Senha
               </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                disabled={isLoading}
-                className={`w-full px-4 py-2.5 rounded-lg border-2 transition-colors ${
-                  errors.email 
-                    ? 'border-red-500 focus:border-red-500' 
-                    : 'border-gray-200 focus:border-whatsapp-primary'
-                } focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed`}
-                placeholder="joao@exemplo.com"
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-500">{errors.email}</p>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="newPassword"
+                  name="newPassword"
+                  value={formData.newPassword}
+                  onChange={handleChange}
+                  disabled={isLoading || !id || !token}
+                  className={`w-full px-4 py-2.5 rounded-lg border-2 transition-colors pr-10 ${
+                    errors.newPassword 
+                      ? 'border-red-500 focus:border-red-500' 
+                      : 'border-gray-200 focus:border-whatsapp-primary'
+                  } focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                  placeholder="Mínimo 6 caracteres"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  disabled={isLoading || !id || !token}
+                >
+                  {showPassword ? '👁️' : '👁️‍🗨️'}
+                </button>
+              </div>
+              {errors.newPassword && (
+                <p className="mt-1 text-sm text-red-500">{errors.newPassword}</p>
+              )}
+            </div>
+
+            {/* Confirm Password */}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-1.5">
+                Confirmar Nova Senha
+              </label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  disabled={isLoading || !id || !token}
+                  className={`w-full px-4 py-2.5 rounded-lg border-2 transition-colors pr-10 ${
+                    errors.confirmPassword 
+                      ? 'border-red-500 focus:border-red-500' 
+                      : 'border-gray-200 focus:border-whatsapp-primary'
+                  } focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                  placeholder="Digite a senha novamente"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  disabled={isLoading || !id || !token}
+                >
+                  {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-500">{errors.confirmPassword}</p>
               )}
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !id || !token}
               className="w-full bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary text-white py-2.5 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
             >
               {isLoading ? (
@@ -139,10 +214,10 @@ function ResetPass() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Enviando...
+                  Redefinindo...
                 </>
               ) : (
-                'Enviar'
+                'Redefinir Senha'
               )}
             </button>
           </form>
@@ -151,7 +226,7 @@ function ResetPass() {
           <div className="mt-4 text-center">
             <p className="text-gray-600 text-sm">
               Lembrou sua senha?{' '}
-              <Link to="/login" className="text-whatsapp-primary font-semibold hover:text-whatsapp-secondary transition">
+              <Link to="/signin" className="text-whatsapp-primary font-semibold hover:text-whatsapp-secondary transition">
                 Fazer Login
               </Link>
             </p>
@@ -182,37 +257,22 @@ function ResetPass() {
 
               {/* Title */}
               <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                Email Enviado com Sucesso!
+                Senha Redefinida com Sucesso!
               </h2>
 
               {/* Message */}
               <div className="mb-6">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-start gap-3">
-                    <svg className="w-6 h-6 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    <div className="flex-1 text-left">
-                      <p className="text-gray-700 text-sm">
-                        Enviamos um link de recuperação para <strong className="text-gray-900">{formData.email}</strong>
-                      </p>
-                    </div>
-                  </div>
-                </div>
                 <p className="text-gray-600 text-sm">
-                  Clique no link enviado para o seu email para redefinir sua senha.
-                </p>
-                <p className="text-gray-500 text-xs mt-2">
-                  Não esqueça de verificar a pasta de spam.
+                  Sua senha foi alterada com sucesso. Você já pode fazer login com sua nova senha.
                 </p>
               </div>
 
               {/* Button */}
               <button
-                onClick={() => setShowSuccessModal(false)}
+                onClick={() => navigate('/signin')}
                 className="w-full bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary text-white py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
               >
-                Fechar
+                Ir para Login
               </button>
             </div>
           </div>
@@ -222,4 +282,4 @@ function ResetPass() {
   )
 }
 
-export default ResetPass
+export default ConfirmResetPassword

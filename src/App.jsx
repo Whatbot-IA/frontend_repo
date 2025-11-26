@@ -16,6 +16,7 @@ import Settings from './pages/Settings'
 import Reports from './pages/Reports'
 import Contacts from './pages/Contacts'
 import Notifications from './pages/Notifications'
+import ConfirmResetPassword from './pages/ConfirmResetPassword'
 
 function App() {
   const [loading, setLoading] = useState(true)
@@ -42,6 +43,7 @@ function App() {
         <Route path="/login" element={<SignIn />} />
         <Route path="/forgot-password" element={<ResetPass />} />
         <Route path="/reset-password" element={<ResetPass />} />
+        <Route path="/reset-password-confirm" element={<ConfirmResetPassword />} />
         
         {/* Rotas protegidas */}
         <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
