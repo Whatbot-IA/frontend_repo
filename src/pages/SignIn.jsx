@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { login } from '../services/api'
 
 function SignIn() {
   const navigate = useNavigate()
@@ -10,6 +11,8 @@ function SignIn() {
 
   const [errors, setErrors] = useState({})
   const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [apiError, setApiError] = useState('')
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -23,6 +26,9 @@ function SignIn() {
         ...prev,
         [name]: ''
       }))
+    }
+    if (apiError) {
+      setApiError('')
     }
   }
 
@@ -45,14 +51,39 @@ function SignIn() {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     
     if (validateForm()) {
-      console.log('Login submitted:', formData)
-      // Aqui você faria a chamada para a API
-      // Simulando login bem-sucedido
-      navigate('/dashboard')
+      setIsLoading(true)
+      setApiError('')
+      
+      const result = await login({
+        email: formData.email,
+        password: formData.password
+      })
+
+      if (result.success) {
+        // Login bem-sucedido - redirecionar para dashboard
+        navigate('/dashboard')
+      } else {
+        setIsLoading(false)
+        
+        const { statusCode, message } = result.error
+        
+        if (statusCode === 403) {
+          // Email não confirmado
+          setApiError('Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada.')
+        } else if (statusCode === 401) {
+          // Credenciais inválidas
+          setApiError('Email ou senha incorretos. Verifique suas credenciais e tente novamente.')
+        } else if (!result.error.status) {
+          // Erro de conexão
+          setApiError('Não foi possível conectar ao servidor. Verifique sua conexão.')
+        } else {
+          setApiError(message || 'Erro ao fazer login. Tente novamente.')
+        }
+      }
     }
   }
 
@@ -77,6 +108,13 @@ function SignIn() {
 
         {/* Form */}
         <div className="bg-gray-50 border-2 border-black rounded-2xl shadow-2xl p-6">
+          {/* API Error Message */}
+          {apiError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600 font-semibold">{apiError}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email */}
             <div>
@@ -143,9 +181,20 @@ function SignIn() {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary text-white py-2.5 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary text-white py-2.5 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
             >
-              Entrar
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Entrando...
+                </span>
+              ) : (
+                'Entrar'
+              )}
             </button>
           </form>
 

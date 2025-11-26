@@ -3,9 +3,19 @@ import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import styled from 'styled-components'
 import axios from 'axios'
+import { getUserProfile, getDashboardStats } from '../services/api'
 
 function Dashboard() {
   const navigate = useNavigate()
+  
+  // Estado para dados do usuário
+  const [userData, setUserData] = useState(null)
+  const [loadingUser, setLoadingUser] = useState(true)
+  
+  // Estado para estatísticas do dashboard
+  const [stats, setStats] = useState(null)
+  const [loadingStats, setLoadingStats] = useState(true)
+  const [statsError, setStatsError] = useState(null)
   
   // Estado para dados do clima
   const [weatherData, setWeatherData] = useState(null)
@@ -15,16 +25,56 @@ function Dashboard() {
   // Estado para hora e data atual
   const [currentTime, setCurrentTime] = useState(new Date())
 
-  // Dados de exemplo (posteriormente virão da API)
-  const stats = {
-    connectedAccounts: 3,
-    openChats: 45,
-    totalMessages: 1247,
-    totalContacts: 892
+  const notifications = 5 // Número de notificações pendentes
+
+  // Função para buscar estatísticas
+  const fetchStats = async () => {
+    try {
+      setLoadingStats(true)
+      setStatsError(null)
+      const result = await getDashboardStats()
+      
+      if (result.success) {
+        setStats(result.data)
+      } else {
+        setStatsError(result.error.message)
+      }
+    } catch (error) {
+      setStatsError('Erro ao carregar estatísticas')
+    } finally {
+      setLoadingStats(false)
+    }
   }
 
-  const notifications = 5 // Número de notificações pendentes
-  const userName = 'Hudson' // Nome do usuário (virá da API/contexto)
+  // Buscar dados do usuário
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        setLoadingUser(true)
+        const result = await getUserProfile()
+        
+        if (result.success) {
+          setUserData(result.data)
+        } else {
+          console.error('Erro ao buscar perfil:', result.error)
+          // Se falhar, redirecionar para login
+          navigate('/signin')
+        }
+      } catch (error) {
+        console.error('Erro ao buscar perfil:', error)
+        navigate('/signin')
+      } finally {
+        setLoadingUser(false)
+      }
+    }
+
+    fetchUserProfile()
+  }, [navigate])
+
+  // Buscar estatísticas
+  useEffect(() => {
+    fetchStats()
+  }, [])
 
   // Atualizar hora a cada segundo
   useEffect(() => {
@@ -148,16 +198,22 @@ function Dashboard() {
     { time: 'Ontem', message: 'Plano Professional renovado', type: 'success' }
   ]
 
+  // Extrair primeiro nome do usuário
+  const getFirstName = () => {
+    if (!userData?.fullName) return 'Usuário'
+    return userData.fullName.split(' ')[0]
+  }
+
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <Sidebar />
+      <Sidebar userData={userData} />
 
       {/* Main Content */}
       <main className="flex-1 lg:ml-64 p-8 pt-20 lg:pt-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
-            Bem-vindo, {userName}!
+            {loadingUser ? 'Carregando...' : `Bem-vindo, ${getFirstName()}!`}
           </h1>
           <p className="text-gray-600">
             Estás na página de <span className="font-semibold">Dashboard</span> e tu tens{' '}
@@ -289,71 +345,108 @@ function Dashboard() {
 
           {/* Right Side - Four Small Cards (2x2 Grid) */}
           <div className="flex-1 lg:w-1/2">
-            <div className="grid grid-cols-2 gap-4 h-full">
-              {/* Connected Accounts */}
-              <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <img src="/icon/phone.png" alt="Phone" className="w-8 h-8 flex-shrink-0" />
-                    <div className="text-2xl sm:text-3xl font-bold text-whatsapp-primary">
-                      {stats.connectedAccounts}
+            {statsError ? (
+              <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center gap-4 h-full min-h-[300px]">
+                <div className="text-red-500 text-center">
+                  <svg className="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="font-semibold text-lg">Erro ao carregar estatísticas</p>
+                  <p className="text-sm text-gray-500 mt-1">{statsError}</p>
+                </div>
+                <button
+                  onClick={fetchStats}
+                  className="px-6 py-2 bg-whatsapp-primary text-white rounded-lg hover:bg-whatsapp-secondary transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Tentar Novamente
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 h-full">
+                {/* Connected Accounts */}
+                <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <img src="/icon/phone.png" alt="Phone" className="w-8 h-8 flex-shrink-0" />
+                      <div className="text-2xl sm:text-3xl font-bold text-whatsapp-primary">
+                        {loadingStats ? (
+                          <div className="animate-pulse bg-gray-200 h-8 w-12 rounded"></div>
+                        ) : (
+                          stats?.instances ?? 0
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-gray-600 font-semibold text-sm sm:text-base">Instâncias</h3>
+                      <p className="text-xs sm:text-sm text-gray-400 mt-1">WhatsApp conectados</p>
                     </div>
                   </div>
-                  <div>
-                    <h3 className="text-gray-600 font-semibold text-sm sm:text-base">Contas Conectadas</h3>
-                    <p className="text-xs sm:text-sm text-gray-400 mt-1">WhatsApp</p>
-                  </div>
                 </div>
-              </div>
 
-              {/* Open Chats */}
-              <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <img src="/icon/chat.png" alt="Chat" className="w-8 h-8 flex-shrink-0" />
-                    <div className="text-2xl sm:text-3xl font-bold text-blue-500">
-                      {stats.openChats}
+                {/* Open Chats */}
+                <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <img src="/icon/chat.png" alt="Chat" className="w-8 h-8 flex-shrink-0" />
+                      <div className="text-2xl sm:text-3xl font-bold text-blue-500">
+                        {loadingStats ? (
+                          <div className="animate-pulse bg-gray-200 h-8 w-12 rounded"></div>
+                        ) : (
+                          stats?.chats ?? 0
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-gray-600 font-semibold text-sm sm:text-base">Chats Abertos</h3>
+                      <p className="text-xs sm:text-sm text-gray-400 mt-1">Conversas ativas</p>
                     </div>
                   </div>
-                  <div>
-                    <h3 className="text-gray-600 font-semibold text-sm sm:text-base">Chats Abertos</h3>
-                    <p className="text-xs sm:text-sm text-gray-400 mt-1">Conversas ativas</p>
-                  </div>
                 </div>
-              </div>
 
-              {/* Total Messages */}
-              <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <img src="/icon/message.png" alt="Message" className="w-8 h-8 flex-shrink-0" />
-                    <div className="text-2xl sm:text-3xl font-bold text-purple-500">
-                      {stats.totalMessages}
+                {/* Total Messages */}
+                <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <img src="/icon/message.png" alt="Message" className="w-8 h-8 flex-shrink-0" />
+                      <div className="text-2xl sm:text-3xl font-bold text-purple-500">
+                        {loadingStats ? (
+                          <div className="animate-pulse bg-gray-200 h-8 w-12 rounded"></div>
+                        ) : (
+                          stats?.messages ?? 0
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-gray-600 font-semibold text-sm sm:text-base">Total de Mensagens</h3>
+                      <p className="text-xs sm:text-sm text-gray-400 mt-1">Todas as mensagens</p>
                     </div>
                   </div>
-                  <div>
-                    <h3 className="text-gray-600 font-semibold text-sm sm:text-base">Total de Mensagens</h3>
-                    <p className="text-xs sm:text-sm text-gray-400 mt-1">Últimas 24 horas</p>
-                  </div>
                 </div>
-              </div>
 
-              {/* Total Contacts */}
-              <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <img src="/icon/contact.png" alt="Contact" className="w-8 h-8 flex-shrink-0" />
-                    <div className="text-2xl sm:text-3xl font-bold text-orange-500">
-                      {stats.totalContacts}
+                {/* Total Contacts */}
+                <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <img src="/icon/contact.png" alt="Contact" className="w-8 h-8 flex-shrink-0" />
+                      <div className="text-2xl sm:text-3xl font-bold text-orange-500">
+                        {loadingStats ? (
+                          <div className="animate-pulse bg-gray-200 h-8 w-12 rounded"></div>
+                        ) : (
+                          stats?.contacts ?? 0
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <h3 className="text-gray-600 font-semibold text-sm sm:text-base">Total de Contatos</h3>
-                    <p className="text-xs sm:text-sm text-gray-400 mt-1">Base de clientes</p>
+                    <div>
+                      <h3 className="text-gray-600 font-semibold text-sm sm:text-base">Total de Contatos</h3>
+                      <p className="text-xs sm:text-sm text-gray-400 mt-1">Base de clientes</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 

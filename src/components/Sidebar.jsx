@@ -1,8 +1,10 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+import { logout } from '../services/api'
 
-function Sidebar() {
+function Sidebar({ userData }) {
   const location = useLocation()
+  const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
 
   const menuItems = [
@@ -44,6 +46,27 @@ function Sidebar() {
   ]
 
   const isActive = (path) => location.pathname === path
+
+  // Função para fazer logout
+  const handleLogout = async () => {
+    const result = await logout()
+    if (result.success) {
+      navigate('/signin')
+    } else {
+      // Mesmo com erro, redireciona para login
+      navigate('/signin')
+    }
+  }
+
+  // Extrair iniciais do nome
+  const getInitials = () => {
+    if (!userData?.fullName) return 'U'
+    const names = userData.fullName.split(' ')
+    if (names.length >= 2) {
+      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase()
+    }
+    return names[0][0].toUpperCase()
+  }
 
   return (
     <>
@@ -108,20 +131,24 @@ function Sidebar() {
         {/* User Info */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
           <div className="flex items-center gap-3 px-4 py-3">
-            <div className="w-10 h-10 bg-whatsapp-primary rounded-full flex items-center justify-center font-bold text-white">
-              U
+            <div className="w-10 h-10 bg-whatsapp-primary rounded-full flex items-center justify-center font-bold text-white text-sm">
+              {getInitials()}
             </div>
-            <div className="flex-1">
-              <p className="font-semibold text-sm text-gray-900">Usuário</p>
-              <p className="text-xs text-gray-500">usuario@email.com</p>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm text-gray-900 truncate">
+                {userData?.fullName || 'Carregando...'}
+              </p>
+              <p className="text-xs text-gray-500 truncate">
+                {userData?.email || 'carregando...'}
+              </p>
             </div>
-            <Link
-              to="/login"
-              className="hover:opacity-70 transition"
+            <button
+              onClick={handleLogout}
+              className="hover:opacity-70 transition flex-shrink-0"
               title="Sair"
             >
               <img src="/icon/exit.png" alt="Sair" className="w-5 h-5" />
-            </Link>
+            </button>
           </div>
         </div>
       </aside>

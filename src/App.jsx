@@ -1,6 +1,7 @@
 ﻿import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Loader from './components/Loader'
+import PrivateRoute from './components/PrivateRoute'
 import Home from './pages/Home'
 import SignUp from './pages/SignUp'
 import SignIn from './pages/SignIn'
@@ -34,22 +35,25 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Rotas públicas */}
         <Route path="/" element={<Home />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/signin" element={<SignIn />} />
         <Route path="/login" element={<SignIn />} />
         <Route path="/forgot-password" element={<ResetPass />} />
         <Route path="/reset-password" element={<ResetPass />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/instances" element={<Instances />} />
-        <Route path="/instances/:instanceId/chat" element={<Chat />} />
-        <Route path="/instances/:instanceId/config" element={<InstanceConfig />} />
-        <Route path="/stores" element={<Stores />} />
-        <Route path="/stores/:storeId" element={<StoreDetail />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/contacts" element={<Contacts />} />
-        <Route path="/notifications" element={<Notifications />} />
+        
+        {/* Rotas protegidas */}
+        <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/instances" element={<PrivateRoute><Instances /></PrivateRoute>} />
+        <Route path="/instances/:instanceId/chat" element={<PrivateRoute><Chat /></PrivateRoute>} />
+        <Route path="/instances/:instanceId/config" element={<PrivateRoute><InstanceConfig /></PrivateRoute>} />
+        <Route path="/stores" element={<PrivateRoute><Stores /></PrivateRoute>} />
+        <Route path="/stores/:storeId" element={<PrivateRoute><StoreDetail /></PrivateRoute>} />
+        <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+        <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
+        <Route path="/contacts" element={<PrivateRoute><Contacts /></PrivateRoute>} />
+        <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
       </Routes>
     </Router>
   )
