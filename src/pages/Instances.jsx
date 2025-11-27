@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import styled from 'styled-components'
+import io from 'socket.io-client'
 
 function Instances() {
   const navigate = useNavigate()
@@ -9,6 +10,13 @@ function Instances() {
   const [showInfoModal, setShowInfoModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [selectedInstance, setSelectedInstance] = useState(null)
+  
+  // Socket.io states
+  const [qrCodeUrl, setQrCodeUrl] = useState(null)
+  const [connectionStatus, setConnectionStatus] = useState('disconnected')
+  const socketRef = useRef(null)
+  const [userData, setUserData] = useState(null)
+  const [isSocketConnected, setIsSocketConnected] = useState(false)
 
   // Dados de exemplo (posteriormente virão da API)
   const instances = [
@@ -38,92 +46,124 @@ function Instances() {
       name: 'Marketing',
       connectedAt: '2024-10-27 11:15',
       lastActivity: '2024-10-30 09:30'
-    },
-    {
-      id: 'session-001',
-      sessionId: 'whatsapp-vendas-01',
-      status: 'connected',
-      phone: '+244 923 456 789',
-      name: 'Vendas Principal',
-      connectedAt: '2024-10-28 14:30',
-      lastActivity: '2024-10-30 10:15'
-    },
-    {
-      id: 'session-002',
-      sessionId: 'whatsapp-suporte-01',
-      status: 'disconnected',
-      phone: '+244 912 345 678',
-      name: 'Suporte Técnico',
-      connectedAt: '2024-10-25 09:20',
-      lastActivity: '2024-10-29 18:45'
-    },
-    {
-      id: 'session-003',
-      sessionId: 'whatsapp-marketing-01',
-      status: 'connected',
-      phone: '+244 934 567 890',
-      name: 'Marketing',
-      connectedAt: '2024-10-27 11:15',
-      lastActivity: '2024-10-30 09:30'
-    },
-    {
-      id: 'session-001',
-      sessionId: 'whatsapp-vendas-01',
-      status: 'connected',
-      phone: '+244 923 456 789',
-      name: 'Vendas Principal',
-      connectedAt: '2024-10-28 14:30',
-      lastActivity: '2024-10-30 10:15'
-    },
-    {
-      id: 'session-002',
-      sessionId: 'whatsapp-suporte-01',
-      status: 'disconnected',
-      phone: '+244 912 345 678',
-      name: 'Suporte Técnico',
-      connectedAt: '2024-10-25 09:20',
-      lastActivity: '2024-10-29 18:45'
-    },
-    {
-      id: 'session-003',
-      sessionId: 'whatsapp-marketing-01',
-      status: 'connected',
-      phone: '+244 934 567 890',
-      name: 'Marketing',
-      connectedAt: '2024-10-27 11:15',
-      lastActivity: '2024-10-30 09:30'
-    },
-    {
-      id: 'session-001',
-      sessionId: 'whatsapp-vendas-01',
-      status: 'connected',
-      phone: '+244 923 456 789',
-      name: 'Vendas Principal',
-      connectedAt: '2024-10-28 14:30',
-      lastActivity: '2024-10-30 10:15'
-    },
-    {
-      id: 'session-002',
-      sessionId: 'whatsapp-suporte-01',
-      status: 'disconnected',
-      phone: '+244 912 345 678',
-      name: 'Suporte Técnico',
-      connectedAt: '2024-10-25 09:20',
-      lastActivity: '2024-10-29 18:45'
-    },
-    {
-      id: 'session-003',
-      sessionId: 'whatsapp-marketing-01',
-      status: 'connected',
-      phone: '+244 934 567 890',
-      name: 'Marketing',
-      connectedAt: '2024-10-27 11:15',
-      lastActivity: '2024-10-30 09:30'
     }
   ]
 
-  // QR Code de exemplo (virá da API)
-  const qrCode = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Example'
+  // Fetch user profile for userId
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        // Try to get from API first
+        const { getUserProfile } = await import('../services/api')
+        const result = await getUserProfile()
+        if (result.success) {
+          console.log('User data loaded:', result.data)
+          setUserData(result.data)
+        } else {
+          console.error('Failed to load user profile:', result.error)
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error)
+      }
+    }
+    fetchUserData()
+  }, [])
+
+  // Socket.io connection - only when modal opens
+  useEffect(() => {
+    if (!showAddModal) return
+
+    // Initialize socket connection with proper config
+    const newSocket = io('http://localhost:3000', {
+      transports: ['websocket'],
+      autoConnect: true,
+    })
+
+    // Evento: Conexão estabelecida
+    newSocket.on('connect', () => {
+      console.log('Conectado ao WebSocket! Socket ID:', newSocket.id)
+      console.log('Socket connected:', newSocket.connected)
+      setIsSocketConnected(true) // ✅ Atualiza o state
+    })
+
+    // Evento: QR Code recebido
+    newSocket.on('qr_code', (data) => {
+      console.log('📱 QR Code recebido do backend!')
+      console.log('QR Code URL:', data.qrCodeUrl ? data.qrCodeUrl.substring(0, 50) + '...' : 'null')
+      console.log('Tamanho do QR Code:', data.qrCodeUrl ? data.qrCodeUrl.length : 0, 'caracteres')
+      setQrCodeUrl(data.qrCodeUrl) // Data URI (base64)
+    })
+
+    // Evento: Status da conexão
+    newSocket.on('connection_status', (data) => {
+      console.log('Status:', data.status)
+      setConnectionStatus(data.status)
+      
+      // Limpar QR code após conectar
+      if (data.status === 'ready' || data.status === 'authenticated') {
+        setQrCodeUrl(null)
+      }
+    })
+
+    // Evento: Desconectado
+    newSocket.on('disconnect', () => {
+      console.log('Desconectado do WebSocket')
+      setIsSocketConnected(false) // ✅ Reseta
+    })
+
+    socketRef.current = newSocket
+
+    // Cleanup when modal closes
+    return () => {
+      console.log('Fechando conexão WebSocket')
+      newSocket.disconnect()
+      socketRef.current = null
+      // Reset states
+      setQrCodeUrl(null)
+      setConnectionStatus('disconnected')
+      setIsSocketConnected(false) // ✅ Reseta state
+    }
+  }, [showAddModal])
+
+  // Request QR Code when modal opens
+  const requestQrCode = () => {
+    console.log('=== requestQrCode called ===')
+    console.log('Socket exists:', !!socketRef.current)
+    console.log('Socket connected:', socketRef.current?.connected)
+    console.log('UserData:', userData)
+    console.log('UserId:', userData?.id)
+    
+    if (!socketRef.current) {
+      console.error('❌ Socket não existe')
+      return
+    }
+    
+    if (!socketRef.current.connected) {
+      console.error('❌ Socket não está conectado')
+      return
+    }
+    
+    if (!userData || !userData.id) {
+      console.error('❌ UserData ou userId não disponível')
+      return
+    }
+    
+    // IMPORTANTE: Enviar userId do usuário logado
+    console.log('✅ Emitindo request_qr com userId:', userData.id)
+    socketRef.current.emit('request_qr', { userId: userData.id })
+    console.log('✅ Evento request_qr emitido')
+  }
+
+  // Request QR when modal opens and socket is connected
+  useEffect(() => {
+    if (showAddModal && userData && isSocketConnected) { // ✅ Usa o state reativo
+      console.log('Modal aberto, socket conectado, userData pronto - solicitando QR')
+      // Wait a bit for socket to be fully ready
+      setTimeout(() => {
+        requestQrCode()
+      }, 500)
+    }
+  }, [showAddModal, userData, isSocketConnected]) // ✅ Dependência correta
 
   const getStatusBadge = (status) => {
     const styles = {
@@ -352,14 +392,52 @@ function Instances() {
             <div className="space-y-6">
               {/* QR Code Section */}
               <div className="flex justify-center">
-                <div className="bg-white p-3 sm:p-4 rounded-xl border-4 border-whatsapp-primary shadow-lg">
-                  <img
-                    src={qrCode}
-                    alt="QR Code"
-                    className="w-48 h-48 sm:w-64 sm:h-64"
-                  />
-                </div>
+                {connectionStatus === 'ready' ? (
+                  <div className="w-48 h-48 sm:w-64 sm:h-64 flex items-center justify-center bg-green-50 rounded-xl border-4 border-green-500 shadow-lg">
+                    <div className="text-center p-4">
+                      <div className="text-6xl mb-4">✅</div>
+                      <p className="text-green-800 font-bold text-lg">WhatsApp conectado!</p>
+                      <p className="text-green-600 text-sm mt-2">Sua instância está pronta para uso</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white p-3 sm:p-4 rounded-xl border-4 border-whatsapp-primary shadow-lg">
+                    {qrCodeUrl ? (
+                      <img
+                        src={qrCodeUrl}
+                        alt="QR Code"
+                        className="w-48 h-48 sm:w-64 sm:h-64"
+                      />
+                    ) : (
+                      <div className="w-48 h-48 sm:w-64 sm:h-64 flex items-center justify-center bg-gray-100 rounded">
+                        <div className="text-center">
+                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-whatsapp-primary mx-auto mb-3"></div>
+                          <p className="text-gray-600 text-sm">Gerando QR Code...</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
+
+              {/* Connection Status */}
+              {connectionStatus && connectionStatus !== 'disconnected' && connectionStatus !== 'ready' && (
+                <div className={`p-3 rounded-lg text-center font-semibold ${
+                  connectionStatus === 'authenticated'
+                    ? 'bg-green-100 text-green-800'
+                    : connectionStatus === 'qr'
+                    ? 'bg-blue-100 text-blue-800'
+                    : connectionStatus === 'auth_failure' || connectionStatus === 'error'
+                    ? 'bg-red-100 text-red-800'
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  Status: {connectionStatus === 'authenticated' ? 'Autenticando... ✓' : 
+                           connectionStatus === 'qr' ? 'Aguardando QR Code' : 
+                           connectionStatus === 'auth_failure' ? 'Falha na autenticação ✗' :
+                           connectionStatus === 'error' ? 'Erro na conexão ✗' :
+                           connectionStatus}
+                </div>
+              )}
 
               <div className="bg-blue-50 border-l-4 border-blue-500 p-3 sm:p-4 rounded">
                 <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
@@ -397,11 +475,22 @@ function Instances() {
                 >
                   Cancelar
                 </button>
-                <button
-                  className="px-6 py-2 bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary text-white rounded-lg font-medium hover:shadow-lg transition order-1 sm:order-2"
-                >
-                  Aguardando Conexão...
-                </button>
+                {connectionStatus === 'ready' ? (
+                  <button
+                    onClick={() => setShowAddModal(false)}
+                    className="px-6 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition order-1 sm:order-2"
+                  >
+                    Concluir ✓
+                  </button>
+                ) : (
+                  <button
+                    onClick={requestQrCode}
+                    className="px-6 py-2 bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary text-white rounded-lg font-medium hover:shadow-lg transition order-1 sm:order-2"
+                    disabled={!userData}
+                  >
+                    {qrCodeUrl ? 'Gerar Novo QR Code' : 'Aguardando Conexão...'}
+                  </button>
+                )}
               </div>
             </div>
           </ModalContent>
