@@ -7,7 +7,11 @@ import {
   getCategories, 
   createCategory, 
   updateCategory, 
-  deleteCategory 
+  deleteCategory,
+  getProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct 
 } from '../services/api'
 
 function StoreDetail() {
@@ -35,7 +39,8 @@ function StoreDetail() {
     description: '',
     price: '',
     categoryId: '',
-    imageUrl: ''
+    imageFile: null,
+    imagePreview: null
   })
 
   // API States
@@ -43,6 +48,7 @@ function StoreDetail() {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadingCategories, setLoadingCategories] = useState(false)
+  const [loadingProducts, setLoadingProducts] = useState(false)
   const [error, setError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   
@@ -52,10 +58,11 @@ function StoreDetail() {
 
   const [products, setProducts] = useState([])
 
-  // Fetch store and categories on mount
+  // Fetch store, categories and products on mount
   useEffect(() => {
     fetchStoreData()
     fetchCategories()
+    fetchProducts()
   }, [storeId])
 
   const fetchStoreData = async () => {
@@ -88,6 +95,22 @@ function StoreDetail() {
       console.error('❌ Erro ao buscar categorias:', err)
     } finally {
       setLoadingCategories(false)
+    }
+  }
+
+  const fetchProducts = async () => {
+    try {
+      setLoadingProducts(true)
+      const response = await getProducts({ storeId })
+      if (response.success) {
+        setProducts(response.data)
+      } else {
+        console.error('Erro ao carregar produtos:', response.error)
+      }
+    } catch (err) {
+      console.error('❌ Erro ao buscar produtos:', err)
+    } finally {
+      setLoadingProducts(false)
     }
   }
 
@@ -183,36 +206,123 @@ function StoreDetail() {
   }
 
   // Product Functions
-  const handleAddProduct = () => {
-    if (productForm.name.trim() && productForm.price && productForm.categoryId) {
-      const newProduct = {
-        id: `prod-${Date.now()}`,
+  const handleImageChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      setProductForm({
         ...productForm,
-        price: parseFloat(productForm.price)
+        imageFile: file,
+        imagePreview: URL.createObjectURL(file)
+      })
+    }
+  }
+
+  const handleAddProduct = async () => {
+    if (!productForm.name.trim() || !productForm.description.trim() || !productForm.price || !productForm.categoryId) {
+      setNotificationData({ type: 'error', message: 'Por favor, preencha todos os campos obrigatórios' })
+      setShowNotificationModal(true)
+      return
+    }
+
+    try {
+      setIsSaving(true)
+      
+      const formData = new FormData()
+      formData.append('storeId', storeId)
+      formData.append('categoryId', productForm.categoryId)
+      formData.append('name', productForm.name)
+      formData.append('description', productForm.description)
+      formData.append('price', productForm.price)
+      
+      if (productForm.imageFile) {
+        formData.append('image', productForm.imageFile)
       }
-      setProducts([...products, newProduct])
-      setProductForm({ name: '', description: '', price: '', categoryId: '', imageUrl: '' })
-      setShowAddProductModal(false)
+
+      const response = await createProduct(formData)
+
+      if (response.success) {
+        await fetchProducts()
+        setShowAddProductModal(false)
+        setProductForm({ name: '', description: '', price: '', categoryId: '', imageFile: null, imagePreview: null })
+        setNotificationData({ type: 'success', message: 'Produto criado com sucesso!' })
+        setShowNotificationModal(true)
+      } else {
+        setNotificationData({ type: 'error', message: response.error?.message || 'Erro ao criar produto' })
+        setShowNotificationModal(true)
+      }
+    } catch (err) {
+      console.error('❌ Erro ao criar produto:', err)
+      setNotificationData({ type: 'error', message: 'Erro ao conectar com o servidor' })
+      setShowNotificationModal(true)
+    } finally {
+      setIsSaving(false)
     }
   }
 
-  const handleEditProduct = () => {
-    if (productForm.name.trim() && productForm.price && productForm.categoryId) {
-      setProducts(products.map(prod => 
-        prod.id === selectedProduct.id 
-          ? { ...prod, ...productForm, price: parseFloat(productForm.price) }
-          : prod
-      ))
-      setShowEditProductModal(false)
-      setSelectedProduct(null)
-      setProductForm({ name: '', description: '', price: '', categoryId: '', imageUrl: '' })
+  const handleEditProduct = async () => {
+    if (!productForm.name.trim() || !productForm.price || !productForm.categoryId) {
+      setNotificationData({ type: 'error', message: 'Por favor, preencha todos os campos obrigatórios' })
+      setShowNotificationModal(true)
+      return
+    }
+
+    try {
+      setIsSaving(true)
+      
+      const formData = new FormData()
+      formData.append('name', productForm.name)
+      formData.append('description', productForm.description)
+      formData.append('price', productForm.price)
+      formData.append('categoryId', productForm.categoryId)
+      
+      if (productForm.imageFile) {
+        formData.append('image', productForm.imageFile)
+      }
+
+      const response = await updateProduct(selectedProduct.id, formData)
+
+      if (response.success) {
+        await fetchProducts()
+        setShowEditProductModal(false)
+        setSelectedProduct(null)
+        setProductForm({ name: '', description: '', price: '', categoryId: '', imageFile: null, imagePreview: null })
+        setNotificationData({ type: 'success', message: 'Produto atualizado com sucesso!' })
+        setShowNotificationModal(true)
+      } else {
+        setNotificationData({ type: 'error', message: response.error?.message || 'Erro ao atualizar produto' })
+        setShowNotificationModal(true)
+      }
+    } catch (err) {
+      console.error('❌ Erro ao atualizar produto:', err)
+      setNotificationData({ type: 'error', message: 'Erro ao conectar com o servidor' })
+      setShowNotificationModal(true)
+    } finally {
+      setIsSaving(false)
     }
   }
 
-  const handleDeleteProduct = () => {
-    setProducts(products.filter(prod => prod.id !== selectedProduct.id))
-    setShowDeleteProductModal(false)
-    setSelectedProduct(null)
+  const handleDeleteProduct = async () => {
+    try {
+      setIsSaving(true)
+      const response = await deleteProduct(selectedProduct.id)
+
+      if (response.success) {
+        await fetchProducts()
+        setShowDeleteProductModal(false)
+        setSelectedProduct(null)
+        setNotificationData({ type: 'success', message: 'Produto eliminado com sucesso!' })
+        setShowNotificationModal(true)
+      } else {
+        setNotificationData({ type: 'error', message: response.error?.message || 'Erro ao eliminar produto' })
+        setShowNotificationModal(true)
+      }
+    } catch (err) {
+      console.error('❌ Erro ao eliminar produto:', err)
+      setNotificationData({ type: 'error', message: 'Erro ao conectar com o servidor' })
+      setShowNotificationModal(true)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const getCategoryName = (categoryId) => {
@@ -369,69 +479,11 @@ function StoreDetail() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {products.map((product) => (
-                <ProductCard key={product.id}>
-                  <div 
-                    className="card-img cursor-pointer"
-                    onClick={() => {
-                      setSelectedImage(product.imageUrl)
-                      setShowImageModal(true)
-                    }}
-                  >
-                    <img src={product.imageUrl} alt={product.name} className="img" />
-                  </div>
-                  <div className="card-title">{product.name}</div>
-                  <div className="card-subtitle">{product.description}</div>
-                  <hr className="card-divider" />
-                  <div className="card-footer">
-                    <div className="card-price">
-                      {formatPrice(product.price)}
-                    </div>
-                    <div className="card-actions">
-                      <button
-                        onClick={() => {
-                          setSelectedProduct(product)
-                          setProductForm({
-                            name: product.name,
-                            description: product.description,
-                            price: product.price.toString(),
-                            categoryId: product.categoryId,
-                            imageUrl: product.imageUrl
-                          })
-                          setShowEditProductModal(true)
-                        }}
-                        className="action-btn"
-                        title="Editar"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedProduct(product)
-                          setShowDeleteProductModal(true)
-                        }}
-                        className="action-btn delete"
-                        title="Eliminar"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                  <div className="card-category">
-                    {getCategoryName(product.categoryId)}
-                  </div>
-                </ProductCard>
-              ))}
-            </div>
-
-            {products.length === 0 && (
+            {loadingProducts ? (
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-whatsapp-primary"></div>
+              </div>
+            ) : products.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-xl">
                 <p className="text-gray-500 mb-4">Nenhum produto criado</p>
                 <button
@@ -440,6 +492,82 @@ function StoreDetail() {
                 >
                   Criar primeiro produto
                 </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {products.map((product) => {
+                  // Monta URL completa da imagem (adiciona base URL se for caminho relativo)
+                  const getImageUrl = (url) => {
+                    if (!url) return '/img-404.webp'
+                    if (url.startsWith('http')) return url
+                    return `http://localhost:3000${url}`
+                  }
+                  const productImage = getImageUrl(product.imageUrl)
+                  
+                  return (
+                  <ProductCard key={product.id}>
+                    <div 
+                      className="card-img cursor-pointer"
+                      onClick={() => {
+                        if (productImage) {
+                          setSelectedImage(productImage)
+                          setShowImageModal(true)
+                        }
+                      }}
+                    >
+                      <img src={productImage} alt={product.name} className="img" />
+                    </div>
+                    <div className="card-title">{product.name}</div>
+                    <div className="card-subtitle">{product.description}</div>
+                    <hr className="card-divider" />
+                    <div className="card-footer">
+                      <div className="card-price">
+                        {formatPrice(product.price)}
+                      </div>
+                      <div className="card-actions">
+                        <button
+                          onClick={() => {
+                            setSelectedProduct(product)
+                            setProductForm({
+                              name: product.name,
+                              description: product.description || '',
+                              price: product.price?.toString() || '',
+                              categoryId: product.categoryId?.toString() || '',
+                              imageFile: null,
+                              imagePreview: null,
+                              imageUrl: productImage
+                            })
+                            setShowEditProductModal(true)
+                          }}
+                          className="action-btn"
+                          title="Editar"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedProduct(product)
+                            setShowDeleteProductModal(true)
+                          }}
+                          className="action-btn delete"
+                          title="Eliminar"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                    <div className="card-category">
+                      {getCategoryName(product.categoryId)}
+                    </div>
+                  </ProductCard>
+                  )
+                })}
               </div>
             )}
           </div>
@@ -608,7 +736,7 @@ function StoreDetail() {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Descrição
+                  Descrição *
                 </label>
                 <textarea
                   value={productForm.description}
@@ -652,31 +780,62 @@ function StoreDetail() {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  URL da Imagem
+                  Imagem do Produto (opcional)
                 </label>
-                <input
-                  type="text"
-                  value={productForm.imageUrl}
-                  onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}
-                  placeholder="https://exemplo.com/imagem.jpg"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-primary focus:border-transparent outline-none transition"
-                />
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-whatsapp-primary transition cursor-pointer relative">
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    onChange={handleImageChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                  {productForm.imagePreview ? (
+                    <div className="relative">
+                      <img 
+                        src={productForm.imagePreview} 
+                        alt="Preview" 
+                        className="max-h-40 mx-auto rounded-lg object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setProductForm({ ...productForm, imageFile: null, imagePreview: null })
+                        }}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 z-20"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="py-4 pointer-events-none">
+                      <div className="text-4xl mb-2">📷</div>
+                      <p className="text-gray-600 text-sm">Clique para selecionar uma imagem</p>
+                      <p className="text-gray-400 text-xs mt-1">PNG, JPG ou WEBP (máx. 5MB)</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
               <button
-                onClick={() => setShowAddProductModal(false)}
-                className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition order-2 sm:order-1"
+                onClick={() => {
+                  setShowAddProductModal(false)
+                  setProductForm({ name: '', description: '', price: '', categoryId: '', imageFile: null, imagePreview: null })
+                }}
+                disabled={isSaving}
+                className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition order-2 sm:order-1 disabled:opacity-50"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleAddProduct}
-                disabled={!productForm.name.trim() || !productForm.price || !productForm.categoryId}
+                disabled={!productForm.name.trim() || !productForm.description.trim() || !productForm.price || !productForm.categoryId || isSaving}
                 className="px-6 py-2 bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary text-white rounded-lg font-medium hover:shadow-lg transition order-1 sm:order-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Criar Produto
+                {isSaving ? 'Criando...' : 'Criar Produto'}
               </button>
             </div>
           </ModalContent>
@@ -757,15 +916,51 @@ function StoreDetail() {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  URL da Imagem
+                  Imagem do Produto (opcional)
                 </label>
-                <input
-                  type="text"
-                  value={productForm.imageUrl}
-                  onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}
-                  placeholder="https://exemplo.com/imagem.jpg"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-primary focus:border-transparent outline-none transition"
-                />
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-whatsapp-primary transition cursor-pointer relative">
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    onChange={handleImageChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                  {productForm.imagePreview ? (
+                    <div className="relative">
+                      <img 
+                        src={productForm.imagePreview} 
+                        alt="Preview" 
+                        className="max-h-40 mx-auto rounded-lg object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setProductForm({ ...productForm, imageFile: null, imagePreview: null })
+                        }}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 z-20"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : productForm.imageUrl ? (
+                    <div className="relative">
+                      <img 
+                        src={productForm.imageUrl} 
+                        alt="Imagem atual" 
+                        className="max-h-40 mx-auto rounded-lg object-cover"
+                      />
+                      <p className="text-gray-500 text-xs mt-2">Clique para alterar a imagem</p>
+                    </div>
+                  ) : (
+                    <div className="py-4 pointer-events-none">
+                      <div className="text-4xl mb-2">📷</div>
+                      <p className="text-gray-600 text-sm">Clique para selecionar uma imagem</p>
+                      <p className="text-gray-400 text-xs mt-1">PNG, JPG ou WEBP (máx. 5MB)</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -778,10 +973,10 @@ function StoreDetail() {
               </button>
               <button
                 onClick={handleEditProduct}
-                disabled={!productForm.name.trim() || !productForm.price || !productForm.categoryId}
+                disabled={!productForm.name.trim() || !productForm.price || !productForm.categoryId || isSaving}
                 className="px-6 py-2 bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary text-white rounded-lg font-medium hover:shadow-lg transition order-1 sm:order-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Salvar Alterações
+                {isSaving ? 'Salvando...' : 'Salvar Alterações'}
               </button>
             </div>
           </ModalContent>
@@ -806,15 +1001,17 @@ function StoreDetail() {
               <div className="flex flex-col sm:flex-row justify-center gap-3">
                 <button
                   onClick={() => setShowDeleteProductModal(false)}
-                  className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition order-2 sm:order-1"
+                  disabled={isSaving}
+                  className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition order-2 sm:order-1 disabled:opacity-50"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleDeleteProduct}
-                  className="px-6 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition order-1 sm:order-2"
+                  disabled={isSaving}
+                  className="px-6 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition order-1 sm:order-2 disabled:opacity-50"
                 >
-                  Sim, Eliminar
+                  {isSaving ? 'Eliminando...' : 'Sim, Eliminar'}
                 </button>
               </div>
             </div>

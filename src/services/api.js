@@ -527,13 +527,18 @@ export const deleteCategory = async (categoryId) => {
 // ==================== PRODUCTS ENDPOINTS ====================
 
 /**
- * Buscar produtos de uma loja
- * @param {number} storeId - ID da loja
+ * Buscar produtos com filtros opcionais
+ * @param {Object} filters - Filtros opcionais { storeId, categoryId }
  * @returns {Promise} Resposta da API
  */
-export const getProducts = async (storeId) => {
+export const getProducts = async (filters = {}) => {
   try {
-    const response = await api.get(`/products/store/${storeId}`)
+    const params = new URLSearchParams()
+    if (filters.storeId) params.append('storeId', filters.storeId)
+    if (filters.categoryId) params.append('categoryId', filters.categoryId)
+    
+    const url = params.toString() ? `/products?${params.toString()}` : '/products'
+    const response = await api.get(url)
     return { success: true, data: response.data }
   } catch (error) {
     return {
@@ -567,13 +572,17 @@ export const getProduct = async (productId) => {
 }
 
 /**
- * Criar um novo produto
- * @param {Object} productData - { store_id, category_id, name, description, price, image_url }
+ * Criar um novo produto com upload de imagem
+ * @param {FormData} formData - FormData com storeId, categoryId, name, description, price, image (opcional)
  * @returns {Promise} Resposta da API
  */
-export const createProduct = async (productData) => {
+export const createProduct = async (formData) => {
   try {
-    const response = await api.post('/products', productData)
+    const response = await api.post('/products', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
     return { success: true, data: response.data }
   } catch (error) {
     return {
@@ -587,14 +596,18 @@ export const createProduct = async (productData) => {
 }
 
 /**
- * Atualizar um produto
+ * Atualizar um produto com upload de imagem opcional
  * @param {number} productId - ID do produto
- * @param {Object} productData - { name, description, price, image_url, category_id }
+ * @param {FormData} formData - FormData com name, description, price, categoryId, image (opcional)
  * @returns {Promise} Resposta da API
  */
-export const updateProduct = async (productId, productData) => {
+export const updateProduct = async (productId, formData) => {
   try {
-    const response = await api.put(`/products/${productId}`, productData)
+    const response = await api.patch(`/products/${productId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
     return { success: true, data: response.data }
   } catch (error) {
     return {

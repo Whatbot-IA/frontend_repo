@@ -1,11 +1,27 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
-import { logout } from '../services/api'
+import { useState, useEffect } from 'react'
+import { logout, getUserProfile } from '../services/api'
 
-function Sidebar({ userData }) {
+function Sidebar() {
   const location = useLocation()
   const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
+  const [userData, setUserData] = useState(null)
+
+  // Buscar dados do usuário ao montar o componente
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await getUserProfile()
+        if (response.success) {
+          setUserData(response.data)
+        }
+      } catch (error) {
+        console.error('Erro ao buscar dados do usuário:', error)
+      }
+    }
+    fetchUserData()
+  }, [])
 
   const menuItems = [
     {
