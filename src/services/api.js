@@ -760,6 +760,52 @@ export const deleteInstance = async (instanceId) => {
   }
 }
 
+// ==================== WHATSAPP INSTANCES ENDPOINTS ====================
+
+/**
+ * Listar instâncias WhatsApp do usuário
+ * @returns {Promise} Resposta da API com array de instâncias
+ * Exemplo: [{ id, userId, sessionId, phoneNumber, name, status, createdAt }]
+ */
+export const getWhatsAppInstances = async () => {
+  try {
+    const response = await api.get('/whatsapp/instances')
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        status: error.response?.status,
+        statusCode: error.response?.data?.statusCode,
+        message: error.response?.data?.message || 'Erro ao buscar instâncias WhatsApp',
+        data: error.response?.data
+      }
+    }
+  }
+}
+
+/**
+ * Deletar/Desconectar instância WhatsApp
+ * @param {string} sessionId - Session ID da instância WhatsApp
+ * @returns {Promise} Resposta da API
+ */
+export const deleteWhatsAppInstance = async (sessionId) => {
+  try {
+    const response = await api.delete(`/whatsapp/instances/${sessionId}`)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        status: error.response?.status,
+        statusCode: error.response?.data?.statusCode,
+        message: error.response?.data?.message || 'Erro ao deletar instância WhatsApp',
+        data: error.response?.data
+      }
+    }
+  }
+}
+
 // ==================== CONTACTS ENDPOINTS ====================
 
 /**

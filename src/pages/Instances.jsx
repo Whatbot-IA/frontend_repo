@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import styled from 'styled-components'
 import io from 'socket.io-client'
+import { getWhatsAppInstances, deleteWhatsAppInstance } from '../services/api'
 
 function Instances() {
   const navigate = useNavigate()
@@ -17,37 +18,38 @@ function Instances() {
   const socketRef = useRef(null)
   const [userData, setUserData] = useState(null)
   const [isSocketConnected, setIsSocketConnected] = useState(false)
+  const [currentSessionId, setCurrentSessionId] = useState(null)
 
-  // Dados de exemplo (posteriormente virão da API)
-  const instances = [
-    {
-      id: 'session-001',
-      sessionId: 'whatsapp-vendas-01',
-      status: 'connected',
-      phone: '+244 923 456 789',
-      name: 'Vendas Principal',
-      connectedAt: '2024-10-28 14:30',
-      lastActivity: '2024-10-30 10:15'
-    },
-    {
-      id: 'session-002',
-      sessionId: 'whatsapp-suporte-01',
-      status: 'disconnected',
-      phone: '+244 912 345 678',
-      name: 'Suporte Técnico',
-      connectedAt: '2024-10-25 09:20',
-      lastActivity: '2024-10-29 18:45'
-    },
-    {
-      id: 'session-003',
-      sessionId: 'whatsapp-marketing-01',
-      status: 'connected',
-      phone: '+244 934 567 890',
-      name: 'Marketing',
-      connectedAt: '2024-10-27 11:15',
-      lastActivity: '2024-10-30 09:30'
+  // Instances data from API
+  const [instances, setInstances] = useState([])
+  const [isLoadingInstances, setIsLoadingInstances] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Fetch instances from API
+  const fetchInstances = async () => {
+    setIsLoadingInstances(true)
+    setError(null)
+    try {
+      const result = await getWhatsAppInstances()
+      if (result.success) {
+        console.log('Instances loaded:', result.data)
+        setInstances(result.data)
+      } else {
+        console.error('Failed to load instances:', result.error)
+        setError(result.error.message)
+      }
+    } catch (error) {
+      console.error('Error loading instances:', error)
+      setError('Erro ao carregar instâncias')
+    } finally {
+      setIsLoadingInstances(false)
     }
-  ]
+  }
+
+  // Load instances on mount
+  useEffect(() => {
+    fetchInstances()
+  }, [])
 
   // Fetch user profile for userId
   useEffect(() => {
@@ -73,10 +75,19 @@ function Instances() {
   useEffect(() => {
     if (!showAddModal) return
 
-    // Initialize socket connection with proper config
+    // Get JWT token from localStorage
+    const token = localStorage.getItem('accessToken')
+    if (!token) {
+      console.error('No access token found')
+      setError('Sessão expirada. Faça login novamente.')
+      return
+    }
+
+    // Initialize socket connection with JWT authentication
     const newSocket = io('http://localhost:3000', {
       transports: ['websocket'],
       autoConnect: true,
+      auth: { token }
     })
 
     // Evento: Conexão estabelecida
@@ -86,22 +97,42 @@ function Instances() {
       setIsSocketConnected(true) // ✅ Atualiza o state
     })
 
+    // Evento: Session criada
+    newSocket.on('session_created', ({ sessionId }) => {
+      console.log('Nova sessão criada:', sessionId)
+      setCurrentSessionId(sessionId)
+      // Save sessionId for this instance
+      localStorage.setItem('whatsapp_session', sessionId)
+    })
+
     // Evento: QR Code recebido
-    newSocket.on('qr_code', (data) => {
+    newSocket.on('qr_code', ({ sessionId, qr }) => {
       console.log('📱 QR Code recebido do backend!')
-      console.log('QR Code URL:', data.qrCodeUrl ? data.qrCodeUrl.substring(0, 50) + '...' : 'null')
-      console.log('Tamanho do QR Code:', data.qrCodeUrl ? data.qrCodeUrl.length : 0, 'caracteres')
-      setQrCodeUrl(data.qrCodeUrl) // Data URI (base64)
+      console.log('SessionId:', sessionId)
+      console.log('QR Code URL:', qr ? qr.substring(0, 50) + '...' : 'null')
+      
+      // Only display QR if it's for our current session
+      if (!currentSessionId || sessionId === currentSessionId) {
+        setQrCodeUrl(qr) // Data URI (base64)
+      }
     })
 
     // Evento: Status da conexão
-    newSocket.on('connection_status', (data) => {
-      console.log('Status:', data.status)
-      setConnectionStatus(data.status)
+    newSocket.on('connection_status', ({ sessionId, status }) => {
+      console.log('Status:', status, 'SessionId:', sessionId)
       
-      // Limpar QR code após conectar
-      if (data.status === 'ready' || data.status === 'authenticated') {
-        setQrCodeUrl(null)
+      // Update status if it's for our current session
+      if (!currentSessionId || sessionId === currentSessionId) {
+        setConnectionStatus(status)
+        
+        // Limpar QR code após conectar
+        if (status === 'ready' || status === 'authenticated') {
+          setQrCodeUrl(null)
+          // Reload instances after successful connection
+          setTimeout(() => {
+            fetchInstances()
+          }, 1000)
+        }
       }
     })
 
@@ -109,6 +140,12 @@ function Instances() {
     newSocket.on('disconnect', () => {
       console.log('Desconectado do WebSocket')
       setIsSocketConnected(false) // ✅ Reseta
+    })
+
+    // Evento: Erro (por exemplo, limite de instâncias excedido)
+    newSocket.on('error', (errorData) => {
+      console.error('Erro do WebSocket:', errorData)
+      setError(errorData.message || 'Erro desconhecido')
     })
 
     socketRef.current = newSocket
@@ -122,63 +159,76 @@ function Instances() {
       setQrCodeUrl(null)
       setConnectionStatus('disconnected')
       setIsSocketConnected(false) // ✅ Reseta state
+      setCurrentSessionId(null)
+      setError(null)
     }
-  }, [showAddModal])
+  }, [showAddModal, currentSessionId])
 
   // Request QR Code when modal opens
   const requestQrCode = () => {
     console.log('=== requestQrCode called ===')
     console.log('Socket exists:', !!socketRef.current)
     console.log('Socket connected:', socketRef.current?.connected)
-    console.log('UserData:', userData)
-    console.log('UserId:', userData?.id)
     
     if (!socketRef.current) {
       console.error('❌ Socket não existe')
+      setError('Conexão WebSocket não estabelecida')
       return
     }
     
     if (!socketRef.current.connected) {
       console.error('❌ Socket não está conectado')
+      setError('Socket não está conectado')
       return
     }
     
-    if (!userData || !userData.id) {
-      console.error('❌ UserData ou userId não disponível')
-      return
-    }
+    // Clear any previous errors
+    setError(null)
     
-    // IMPORTANTE: Enviar userId do usuário logado
-    console.log('✅ Emitindo request_qr com userId:', userData.id)
-    socketRef.current.emit('request_qr', { userId: userData.id })
+    // Check for saved session to reconnect
+    const savedSessionId = localStorage.getItem('whatsapp_session')
+    
+    if (savedSessionId) {
+      console.log('✅ Reconectando sessão salva:', savedSessionId)
+      socketRef.current.emit('request_qr', { sessionId: savedSessionId })
+    } else {
+      console.log('✅ Solicitando nova instância')
+      socketRef.current.emit('request_qr', {})
+    }
     console.log('✅ Evento request_qr emitido')
   }
 
   // Request QR when modal opens and socket is connected
   useEffect(() => {
-    if (showAddModal && userData && isSocketConnected) { // ✅ Usa o state reativo
-      console.log('Modal aberto, socket conectado, userData pronto - solicitando QR')
+    if (showAddModal && isSocketConnected) {
+      console.log('Modal aberto, socket conectado - solicitando QR')
       // Wait a bit for socket to be fully ready
       setTimeout(() => {
         requestQrCode()
       }, 500)
     }
-  }, [showAddModal, userData, isSocketConnected]) // ✅ Dependência correta
+  }, [showAddModal, isSocketConnected])
 
   const getStatusBadge = (status) => {
     const styles = {
+      ready: 'bg-green-100 text-green-700',
       connected: 'bg-green-100 text-green-700',
+      authenticated: 'bg-blue-100 text-blue-700',
       disconnected: 'bg-red-100 text-red-700',
-      connecting: 'bg-yellow-100 text-yellow-700'
+      connecting: 'bg-yellow-100 text-yellow-700',
+      qr: 'bg-yellow-100 text-yellow-700'
     }
     const labels = {
+      ready: 'Conectado',
       connected: 'Conectado',
+      authenticated: 'Autenticado',
       disconnected: 'Desconectado',
-      connecting: 'Conectando...'
+      connecting: 'Conectando...',
+      qr: 'Aguardando QR'
     }
     return (
-      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${styles[status]}`}>
-        {labels[status]}
+      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${styles[status] || styles.disconnected}`}>
+        {labels[status] || status}
       </span>
     )
   }
@@ -193,11 +243,43 @@ function Instances() {
     setShowDeleteModal(true)
   }
 
-  const confirmDelete = () => {
-    // Aqui virá a lógica de delete via API
-    console.log('Deletando instância:', selectedInstance.id)
-    setShowDeleteModal(false)
-    setSelectedInstance(null)
+  const confirmDelete = async () => {
+    if (!selectedInstance) return
+    
+    setError(null)
+    
+    try {
+      // Try via WebSocket first if connected (for instant disconnect)
+      if (socketRef.current && socketRef.current.connected) {
+        console.log('Disconnecting via WebSocket:', selectedInstance.sessionId)
+        socketRef.current.emit('disconnect_instance', { sessionId: selectedInstance.sessionId })
+      }
+      
+      // Also delete via REST API
+      console.log('Deleting instance via API:', selectedInstance.sessionId)
+      const result = await deleteWhatsAppInstance(selectedInstance.sessionId)
+      
+      if (result.success) {
+        console.log('Instance deleted successfully')
+        // Reload instances list
+        await fetchInstances()
+        
+        // Clear saved sessionId if it matches
+        const savedSessionId = localStorage.getItem('whatsapp_session')
+        if (savedSessionId === selectedInstance.sessionId) {
+          localStorage.removeItem('whatsapp_session')
+        }
+      } else {
+        console.error('Failed to delete instance:', result.error)
+        setError(result.error.message)
+      }
+    } catch (error) {
+      console.error('Error deleting instance:', error)
+      setError('Erro ao deletar instância')
+    } finally {
+      setShowDeleteModal(false)
+      setSelectedInstance(null)
+    }
   }
 
   return (
@@ -225,8 +307,24 @@ function Instances() {
           </button>
         </div>
 
-        {/* Instances Table */}
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+        {/* Error Display */}
+        {error && (
+          <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded">
+            <div className="flex items-center">
+              <span className="text-red-700 font-semibold">⚠️ {error}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {isLoadingInstances ? (
+          <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-whatsapp-primary mx-auto mb-3"></div>
+            <p className="text-gray-600">Carregando instâncias...</p>
+          </div>
+        ) : (
+          /* Instances Table */
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           {/* Desktop Table View */}
           <div className="hidden lg:block overflow-x-auto">
             <table className="w-full">
@@ -256,13 +354,13 @@ function Instances() {
                       {instance.sessionId}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900 font-medium">
-                      {instance.name}
+                      {instance.name || instance.phoneNumber || 'Sem nome'}
                     </td>
                     <td className="px-6 py-4">
                       {getStatusBadge(instance.status)}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {instance.lastActivity}
+                      {instance.createdAt ? new Date(instance.createdAt).toLocaleString('pt-AO') : '-'}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-2">
@@ -274,14 +372,15 @@ function Instances() {
                           Info
                         </button>
                         <button
-                          onClick={() => navigate(`/instances/${instance.id}/chat`)}
+                          onClick={() => navigate(`/instances/${instance.sessionId}/chat`)}
                           className="bg-whatsapp-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-whatsapp-secondary transition flex items-center gap-2"
+                          disabled={instance.status !== 'ready' && instance.status !== 'connected'}
                         >
                           <img src="/icon/chat-blue.png" alt="Chat" className="w-4 h-4" />
                           Chat
                         </button>
                         <button
-                          onClick={() => navigate(`/instances/${instance.id}/config`)}
+                          onClick={() => navigate(`/instances/${instance.sessionId}/config`)}
                           className="bg-purple-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-600 transition flex items-center gap-2"
                         >
                           <img src="/icon/setting.png" alt="Config" className="w-4 h-4" />
@@ -292,7 +391,7 @@ function Instances() {
                           className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600 transition flex items-center gap-2"
                         >
                           <img src="/icon/delete.png" alt="Delete" className="w-4 h-4" />
-                          {instance.status === 'connected' ? 'Logout' : 'Eliminar'}
+                          {instance.status === 'ready' || instance.status === 'connected' ? 'Logout' : 'Eliminar'}
                         </button>
                       </div>
                     </td>
@@ -310,7 +409,7 @@ function Instances() {
                   {/* Header with Name and Status */}
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="font-bold text-gray-900 text-lg">{instance.name}</h3>
+                      <h3 className="font-bold text-gray-900 text-lg">{instance.name || instance.phoneNumber || 'Sem nome'}</h3>
                       <p className="text-xs font-mono text-gray-500 mt-1">{instance.sessionId}</p>
                     </div>
                     <div className="ml-2">
@@ -319,15 +418,17 @@ function Instances() {
                   </div>
 
                   {/* Phone */}
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <img src="/icon/phone.png" alt="Phone" className="w-4 h-4" />
-                    <span>{instance.phone}</span>
-                  </div>
+                  {instance.phoneNumber && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <img src="/icon/phone.png" alt="Phone" className="w-4 h-4" />
+                      <span>{instance.phoneNumber}</span>
+                    </div>
+                  )}
 
-                  {/* Last Activity */}
+                  {/* Created At */}
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <img src="/icon/clock.png" alt="Clock" className="w-4 h-4" />
-                    <span>{instance.lastActivity}</span>
+                    <span>{instance.createdAt ? new Date(instance.createdAt).toLocaleString('pt-AO') : '-'}</span>
                   </div>
 
                   {/* Action Buttons */}
@@ -340,14 +441,15 @@ function Instances() {
                       Info
                     </button>
                     <button
-                      onClick={() => navigate(`/instances/${instance.id}/chat`)}
+                      onClick={() => navigate(`/instances/${instance.sessionId}/chat`)}
                       className="bg-whatsapp-primary text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-whatsapp-secondary transition flex items-center justify-center gap-2"
+                      disabled={instance.status !== 'ready' && instance.status !== 'connected'}
                     >
                       <img src="/icon/chat.png" alt="Chat" className="w-4 h-4" />
                       Chat
                     </button>
                     <button
-                      onClick={() => navigate(`/instances/${instance.id}/config`)}
+                      onClick={() => navigate(`/instances/${instance.sessionId}/config`)}
                       className="bg-purple-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-purple-600 transition flex items-center justify-center gap-2"
                     >
                       <img src="/icon/setting.png" alt="Config" className="w-4 h-4" />
@@ -358,7 +460,7 @@ function Instances() {
                       className="bg-red-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-red-600 transition flex items-center justify-center gap-2"
                     >
                       <img src="/icon/delete.png" alt="Delete" className="w-4 h-4" />
-                      {instance.status === 'connected' ? 'Logout' : 'Eliminar'}
+                      {instance.status === 'ready' || instance.status === 'connected' ? 'Logout' : 'Eliminar'}
                     </button>
                   </div>
                 </div>
@@ -373,6 +475,7 @@ function Instances() {
             </div>
           )}
         </div>
+        )}
       </main>
 
       {/* Modal: Add New Instance */}
@@ -390,6 +493,15 @@ function Instances() {
             </div>
 
             <div className="space-y-6">
+              {/* Error Display in Modal */}
+              {error && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                  <div className="flex items-center">
+                    <span className="text-red-700 font-semibold">⚠️ {error}</span>
+                  </div>
+                </div>
+              )}
+
               {/* QR Code Section */}
               <div className="flex justify-center">
                 {connectionStatus === 'ready' ? (
@@ -477,7 +589,13 @@ function Instances() {
                 </button>
                 {connectionStatus === 'ready' ? (
                   <button
-                    onClick={() => setShowAddModal(false)}
+                    onClick={() => {
+                      setShowAddModal(false)
+                      // Clear saved session after successful connection
+                      localStorage.removeItem('whatsapp_session')
+                      // Refresh instances list
+                      fetchInstances()
+                    }}
                     className="px-6 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition order-1 sm:order-2"
                   >
                     Concluir ✓
@@ -486,7 +604,7 @@ function Instances() {
                   <button
                     onClick={requestQrCode}
                     className="px-6 py-2 bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary text-white rounded-lg font-medium hover:shadow-lg transition order-1 sm:order-2"
-                    disabled={!userData}
+                    disabled={!isSocketConnected}
                   >
                     {qrCodeUrl ? 'Gerar Novo QR Code' : 'Aguardando Conexão...'}
                   </button>
@@ -519,13 +637,15 @@ function Instances() {
 
               <div className="bg-gray-50 p-4 rounded-lg">
                 <label className="text-sm font-semibold text-gray-600">Nome</label>
-                <p className="text-lg text-gray-900 mt-1">{selectedInstance.name}</p>
+                <p className="text-lg text-gray-900 mt-1">{selectedInstance.name || selectedInstance.phoneNumber || 'Sem nome'}</p>
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <label className="text-sm font-semibold text-gray-600">Telefone</label>
-                <p className="text-lg text-gray-900 mt-1">{selectedInstance.phone}</p>
-              </div>
+              {selectedInstance.phoneNumber && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <label className="text-sm font-semibold text-gray-600">Telefone</label>
+                  <p className="text-lg text-gray-900 mt-1">{selectedInstance.phoneNumber}</p>
+                </div>
+              )}
 
               <div className="bg-gray-50 p-4 rounded-lg">
                 <label className="text-sm font-semibold text-gray-600">Status</label>
@@ -535,13 +655,15 @@ function Instances() {
               </div>
 
               <div className="bg-gray-50 p-4 rounded-lg">
-                <label className="text-sm font-semibold text-gray-600">Conectado em</label>
-                <p className="text-lg text-gray-900 mt-1">{selectedInstance.connectedAt}</p>
+                <label className="text-sm font-semibold text-gray-600">Criado em</label>
+                <p className="text-lg text-gray-900 mt-1">
+                  {selectedInstance.createdAt ? new Date(selectedInstance.createdAt).toLocaleString('pt-AO') : '-'}
+                </p>
               </div>
 
               <div className="bg-gray-50 p-4 rounded-lg">
-                <label className="text-sm font-semibold text-gray-600">Última Atividade</label>
-                <p className="text-lg text-gray-900 mt-1">{selectedInstance.lastActivity}</p>
+                <label className="text-sm font-semibold text-gray-600">ID do Usuário</label>
+                <p className="text-lg text-gray-900 mt-1">{selectedInstance.userId}</p>
               </div>
             </div>
 
@@ -566,12 +688,12 @@ function Instances() {
                 <span className="text-3xl">⚠️</span>
               </div>
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
-                {selectedInstance.status === 'connected' ? 'Fazer Logout?' : 'Eliminar Instância?'}
+                {selectedInstance.status === 'ready' || selectedInstance.status === 'connected' ? 'Fazer Logout?' : 'Eliminar Instância?'}
               </h2>
               <p className="text-sm sm:text-base text-gray-600 mb-6">
-                {selectedInstance.status === 'connected' 
-                  ? `Tem certeza que deseja fazer logout da sessão "${selectedInstance.name}"? Você precisará escanear o QR Code novamente para reconectar.`
-                  : `Tem certeza que deseja eliminar a sessão "${selectedInstance.name}"? Esta ação não pode ser desfeita.`
+                {selectedInstance.status === 'ready' || selectedInstance.status === 'connected'
+                  ? `Tem certeza que deseja fazer logout da sessão "${selectedInstance.name || selectedInstance.phoneNumber || 'Sem nome'}"? Você precisará escanear o QR Code novamente para reconectar.`
+                  : `Tem certeza que deseja eliminar a sessão "${selectedInstance.name || selectedInstance.phoneNumber || 'Sem nome'}"? Esta ação não pode ser desfeita.`
                 }
               </p>
 
@@ -590,7 +712,7 @@ function Instances() {
                   onClick={confirmDelete}
                   className="px-6 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition order-1 sm:order-2"
                 >
-                  {selectedInstance.status === 'connected' ? 'Sim, Fazer Logout' : 'Sim, Eliminar'}
+                  {selectedInstance.status === 'ready' || selectedInstance.status === 'connected' ? 'Sim, Fazer Logout' : 'Sim, Eliminar'}
                 </button>
               </div>
             </div>
