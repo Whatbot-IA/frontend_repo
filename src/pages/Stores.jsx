@@ -1,80 +1,159 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import styled from 'styled-components'
+import { getStores, createStore, updateStore, deleteStore, getProducts, getCategories } from '../services/api'
 
 function Stores() {
+  const navigate = useNavigate()
   const [showAddStoreModal, setShowAddStoreModal] = useState(false)
   const [showEditStoreModal, setShowEditStoreModal] = useState(false)
   const [showDeleteStoreModal, setShowDeleteStoreModal] = useState(false)
   const [selectedStore, setSelectedStore] = useState(null)
-  const [storeForm, setStoreForm] = useState({ name: '', description: '' })
+  const [storeForm, setStoreForm] = useState({ storeName: '', description: '', nif: '' })
+  
+  // States for API data
+  const [stores, setStores] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
+  
+  // Notification modal states
+  const [showNotificationModal, setShowNotificationModal] = useState(false)
+  const [notificationData, setNotificationData] = useState({ type: '', message: '' })
 
-  // Dados de exemplo (posteriormente virão da API)
-  const [stores, setStores] = useState([
-    {
-      id: 'store-001',
-      name: 'Loja Principal',
-      description: 'Produtos gerais e eletrônicos',
-      createdAt: '2024-10-15',
-      productsCount: 45,
-      categoriesCount: 8
-    },
-    {
-      id: 'store-002',
-      name: 'Moda e Acessórios',
-      description: 'Roupas, calçados e acessórios fashion',
-      createdAt: '2024-10-20',
-      productsCount: 67,
-      categoriesCount: 12
-    },
-    {
-      id: 'store-003',
-      name: 'Casa e Decoração',
-      description: 'Móveis, decoração e utensílios domésticos',
-      createdAt: '2024-10-25',
-      productsCount: 38,
-      categoriesCount: 6
-    }
-  ])
+  // Fetch stores on component mount
+  useEffect(() => {
+    fetchStores()
+  }, [])
 
-  const handleAddStore = () => {
-    if (storeForm.name.trim()) {
-      const newStore = {
-        id: `store-${Date.now()}`,
-        name: storeForm.name,
-        description: storeForm.description,
-        createdAt: new Date().toISOString().split('T')[0],
-        productsCount: 0,
-        categoriesCount: 0
+  const fetchStores = async () => {
+    try {
+      setLoading(true)
+      setError('')
+      const response = await getStores()
+      
+      if (response.success) {
+        // Map stores with backend counts
+        const mappedStores = response.data.map(store => ({
+          ...store,
+          name: store.storeName || store.store_name,
+          productsCount: store.productCount || 0,
+          categoriesCount: store.categoryCount || 0
+        }))
+        
+        setStores(mappedStores)
+      } else {
+        setError(response.error?.message || 'Erro ao carregar lojas')
       }
-      setStores([...stores, newStore])
-      setStoreForm({ name: '', description: '' })
-      setShowAddStoreModal(false)
+    } catch (err) {
+      console.error('❌ Erro ao buscar lojas:', err)
+      setError('Erro ao conectar com o servidor')
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleEditStore = () => {
-    if (storeForm.name.trim()) {
-      setStores(stores.map(store => 
-        store.id === selectedStore.id 
-          ? { ...store, name: storeForm.name, description: storeForm.description }
-          : store
-      ))
-      setShowEditStoreModal(false)
-      setSelectedStore(null)
-      setStoreForm({ name: '', description: '' })
+  const handleAddStore = async () => {
+    if (!storeForm.storeName.trim()) {
+      setNotificationData({ type: 'error', message: 'Por favor, preencha o nome da loja' })
+      setShowNotificationModal(true)
+      return
+    }
+
+    try {
+      setIsSaving(true)
+      const response = await createStore({
+        storeName: storeForm.storeName,
+        description: storeForm.description,
+        nif: storeForm.nif
+      })
+
+      if (response.success) {
+        await fetchStores() // Refresh stores list
+        setShowAddStoreModal(false)
+        setStoreForm({ storeName: '', description: '', nif: '' })
+        setNotificationData({ type: 'success', message: 'Loja criada com sucesso!' })
+        setShowNotificationModal(true)
+      } else {
+        setNotificationData({ type: 'error', message: response.error?.message || 'Erro ao criar loja' })
+        setShowNotificationModal(true)
+      }
+    } catch (err) {
+      console.error('❌ Erro ao criar loja:', err)
+      setNotificationData({ type: 'error', message: 'Erro ao conectar com o servidor' })
+      setShowNotificationModal(true)
+    } finally {
+      setIsSaving(false)
     }
   }
 
-  const handleDeleteStore = () => {
-    setStores(stores.filter(store => store.id !== selectedStore.id))
-    setShowDeleteStoreModal(false)
-    setSelectedStore(null)
+  const handleEditStore = async () => {
+    if (!storeForm.storeName.trim()) {
+      setNotificationData({ type: 'error', message: 'Por favor, preencha o nome da loja' })
+      setShowNotificationModal(true)
+      return
+    }
+
+    try {
+      setIsSaving(true)
+      const response = await updateStore(selectedStore.id, {
+        storeName: storeForm.storeName,
+        description: storeForm.description,
+        nif: storeForm.nif
+      })
+
+      if (response.success) {
+        await fetchStores() // Refresh stores list
+        setShowEditStoreModal(false)
+        setSelectedStore(null)
+        setStoreForm({ storeName: '', description: '', nif: '' })
+        setNotificationData({ type: 'success', message: 'Loja atualizada com sucesso!' })
+        setShowNotificationModal(true)
+      } else {
+        setNotificationData({ type: 'error', message: response.error?.message || 'Erro ao atualizar loja' })
+        setShowNotificationModal(true)
+      }
+    } catch (err) {
+      console.error('❌ Erro ao atualizar loja:', err)
+      setNotificationData({ type: 'error', message: 'Erro ao conectar com o servidor' })
+      setShowNotificationModal(true)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeleteStore = async () => {
+    try {
+      setIsSaving(true)
+      const response = await deleteStore(selectedStore.id)
+
+      if (response.success) {
+        await fetchStores() // Refresh stores list
+        setShowDeleteStoreModal(false)
+        setSelectedStore(null)
+        setNotificationData({ type: 'success', message: 'Loja eliminada com sucesso!' })
+        setShowNotificationModal(true)
+      } else {
+        setNotificationData({ type: 'error', message: response.error?.message || 'Erro ao deletar loja' })
+        setShowNotificationModal(true)
+      }
+    } catch (err) {
+      console.error('❌ Erro ao deletar loja:', err)
+      setNotificationData({ type: 'error', message: 'Erro ao conectar com o servidor' })
+      setShowNotificationModal(true)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const openEditModal = (store) => {
     setSelectedStore(store)
-    setStoreForm({ name: store.name, description: store.description })
+    setStoreForm({ 
+      storeName: store.storeName || store.name, 
+      description: store.description || '',
+      nif: store.nif || ''
+    })
     setShowEditStoreModal(true)
   }
 
@@ -108,9 +187,47 @@ function Stores() {
           </button>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-whatsapp-primary"></div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={fetchStores}
+              className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition"
+            >
+              Tentar Novamente
+            </button>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && stores.length === 0 && (
+          <div className="col-span-full flex flex-col items-center justify-center py-16">
+            <div className="bg-gray-100 rounded-full p-6 mb-6">
+              <img src="/icon/store.png" alt="Store" className="w-20 h-20 opacity-50" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Nenhuma loja cadastrada</h3>
+            <p className="text-gray-600 mb-6">Crie sua primeira loja para começar a vender</p>
+            <button
+              onClick={() => setShowAddStoreModal(true)}
+              className="bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition"
+            >
+              Criar Minha Primeira Loja
+            </button>
+          </div>
+        )}
+
         {/* Stores Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {stores.map((store) => (
+        {!loading && !error && stores.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {stores.map((store) => (
             <div
               key={store.id}
               className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
@@ -152,7 +269,7 @@ function Stores() {
 
                 <div className="flex items-center gap-2 text-xs text-gray-500 mb-4">
                   <img src="/icon/calendar.png" alt="Calendar" className="w-4 h-4" />
-                  <span>Criado em {store.createdAt}</span>
+                  <span>Criado em {new Date(store.createdAt).toLocaleDateString('pt-BR')}</span>
                 </div>
 
                 <a
@@ -164,22 +281,6 @@ function Stores() {
               </div>
             </div>
           ))}
-        </div>
-
-        {stores.length === 0 && (
-          <div className="text-center py-20">
-            <div className="mb-4">
-              <img src="/icon/store.png" alt="Store" className="w-20 h-20 mx-auto opacity-50" />
-            </div>
-            <p className="text-xl text-gray-500 mb-2">Nenhuma loja criada ainda</p>
-            <p className="text-sm text-gray-400 mb-6">Comece criando sua primeira loja virtual</p>
-            <button
-              onClick={() => setShowAddStoreModal(true)}
-              className="bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all inline-flex items-center gap-2"
-            >
-              <span className="text-xl">+</span>
-              Criar Minha Primeira Loja
-            </button>
           </div>
         )}
       </main>
@@ -205,9 +306,22 @@ function Stores() {
                 </label>
                 <input
                   type="text"
-                  value={storeForm.name}
-                  onChange={(e) => setStoreForm({ ...storeForm, name: e.target.value })}
+                  value={storeForm.storeName}
+                  onChange={(e) => setStoreForm({ ...storeForm, storeName: e.target.value })}
                   placeholder="Ex: Minha Loja Virtual"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-primary focus:border-transparent outline-none transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  NIF (Número de Identificação Fiscal)
+                </label>
+                <input
+                  type="text"
+                  value={storeForm.nif}
+                  onChange={(e) => setStoreForm({ ...storeForm, nif: e.target.value })}
+                  placeholder="Ex: 123456789"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-primary focus:border-transparent outline-none transition"
                 />
               </div>
@@ -229,16 +343,17 @@ function Stores() {
             <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowAddStoreModal(false)}
-                className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition order-2 sm:order-1"
+                disabled={isSaving}
+                className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition order-2 sm:order-1 disabled:opacity-50"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleAddStore}
-                disabled={!storeForm.name.trim()}
+                disabled={!storeForm.storeName.trim() || isSaving}
                 className="px-6 py-2 bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary text-white rounded-lg font-medium hover:shadow-lg transition order-1 sm:order-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Criar Loja
+                {isSaving ? 'Criando...' : 'Criar Loja'}
               </button>
             </div>
           </ModalContent>
@@ -266,9 +381,22 @@ function Stores() {
                 </label>
                 <input
                   type="text"
-                  value={storeForm.name}
-                  onChange={(e) => setStoreForm({ ...storeForm, name: e.target.value })}
+                  value={storeForm.storeName}
+                  onChange={(e) => setStoreForm({ ...storeForm, storeName: e.target.value })}
                   placeholder="Ex: Minha Loja Virtual"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-primary focus:border-transparent outline-none transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  NIF (Número de Identificação Fiscal)
+                </label>
+                <input
+                  type="text"
+                  value={storeForm.nif}
+                  onChange={(e) => setStoreForm({ ...storeForm, nif: e.target.value })}
+                  placeholder="Ex: 123456789"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-primary focus:border-transparent outline-none transition"
                 />
               </div>
@@ -290,16 +418,17 @@ function Stores() {
             <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowEditStoreModal(false)}
-                className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition order-2 sm:order-1"
+                disabled={isSaving}
+                className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition order-2 sm:order-1 disabled:opacity-50"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleEditStore}
-                disabled={!storeForm.name.trim()}
+                disabled={!storeForm.storeName.trim() || isSaving}
                 className="px-6 py-2 bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary text-white rounded-lg font-medium hover:shadow-lg transition order-1 sm:order-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Salvar Alterações
+                {isSaving ? 'Salvando...' : 'Salvar Alterações'}
               </button>
             </div>
           </ModalContent>
@@ -333,17 +462,53 @@ function Stores() {
               <div className="flex flex-col sm:flex-row justify-center gap-3">
                 <button
                   onClick={() => setShowDeleteStoreModal(false)}
-                  className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition order-2 sm:order-1"
+                  disabled={isSaving}
+                  className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition order-2 sm:order-1 disabled:opacity-50"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleDeleteStore}
-                  className="px-6 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition order-1 sm:order-2"
+                  disabled={isSaving}
+                  className="px-6 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition order-1 sm:order-2 disabled:opacity-50"
                 >
-                  Sim, Eliminar
+                  {isSaving ? 'Eliminando...' : 'Sim, Eliminar'}
                 </button>
               </div>
+            </div>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {/* Modal: Notification (Success/Error) */}
+      {showNotificationModal && (
+        <ModalOverlay onClick={() => setShowNotificationModal(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()} className="max-w-md">
+            <div className="text-center">
+              <div className={`mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4 ${
+                notificationData.type === 'success' ? 'bg-green-100' : 'bg-red-100'
+              }`}>
+                <span className="text-3xl">
+                  {notificationData.type === 'success' ? '✅' : '❌'}
+                </span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
+                {notificationData.type === 'success' ? 'Sucesso!' : 'Erro'}
+              </h2>
+              <p className="text-sm sm:text-base text-gray-600 mb-6">
+                {notificationData.message}
+              </p>
+
+              <button
+                onClick={() => setShowNotificationModal(false)}
+                className={`px-6 py-2 text-white rounded-lg font-medium transition ${
+                  notificationData.type === 'success' 
+                    ? 'bg-green-500 hover:bg-green-600' 
+                    : 'bg-red-500 hover:bg-red-600'
+                }`}
+              >
+                OK
+              </button>
             </div>
           </ModalContent>
         </ModalOverlay>

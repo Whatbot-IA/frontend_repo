@@ -318,6 +318,315 @@ export const getSubscriptions = async () => {
   }
 }
 
+// ==================== STORES ENDPOINTS ====================
+
+/**
+ * Buscar lojas do usuário
+ * @returns {Promise} Resposta da API
+ */
+export const getStores = async () => {
+  try {
+    const response = await api.get('/stores')
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao buscar lojas',
+        status: error.response?.status
+      }
+    }
+  }
+}
+
+/**
+ * Buscar uma loja específica
+ * @param {number} storeId - ID da loja
+ * @returns {Promise} Resposta da API
+ */
+export const getStore = async (storeId) => {
+  try {
+    const response = await api.get(`/stores/${storeId}`)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao buscar loja',
+        status: error.response?.status
+      }
+    }
+  }
+}
+
+/**
+ * Criar uma nova loja
+ * @param {Object} storeData - { store_name, description, nif }
+ * @returns {Promise} Resposta da API
+ */
+export const createStore = async (storeData) => {
+  try {
+    const response = await api.post('/stores', storeData)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao criar loja',
+        status: error.response?.status
+      }
+    }
+  }
+}
+
+/**
+ * Atualizar uma loja
+ * @param {number} storeId - ID da loja
+ * @param {Object} storeData - { store_name, description, nif }
+ * @returns {Promise} Resposta da API
+ */
+export const updateStore = async (storeId, storeData) => {
+  try {
+    const response = await api.patch(`/stores/${storeId}`, storeData)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao atualizar loja',
+        status: error.response?.status
+      }
+    }
+  }
+}
+
+/**
+ * Deletar uma loja
+ * @param {number} storeId - ID da loja
+ * @returns {Promise} Resposta da API
+ */
+export const deleteStore = async (storeId) => {
+  try {
+    const response = await api.delete(`/stores/${storeId}`)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao deletar loja',
+        status: error.response?.status
+      }
+    }
+  }
+}
+
+// ==================== CATEGORIES ENDPOINTS ====================
+
+/**
+ * Buscar categorias (todas ou por loja)
+ * @param {number} storeId - ID da loja (opcional)
+ * @returns {Promise} Resposta da API
+ */
+export const getCategories = async (storeId = null) => {
+  try {
+    const url = storeId ? `/categories?storeId=${storeId}` : '/categories'
+    const response = await api.get(url)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao buscar categorias',
+        status: error.response?.status
+      }
+    }
+  }
+}
+
+/**
+ * Buscar uma categoria específica
+ * @param {number} categoryId - ID da categoria
+ * @returns {Promise} Resposta da API
+ */
+export const getCategory = async (categoryId) => {
+  try {
+    const response = await api.get(`/categories/${categoryId}`)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao buscar categoria',
+        status: error.response?.status
+      }
+    }
+  }
+}
+
+/**
+ * Criar uma nova categoria
+ * @param {Object} categoryData - { storeId, name }
+ * @returns {Promise} Resposta da API
+ */
+export const createCategory = async (categoryData) => {
+  try {
+    const response = await api.post('/categories', categoryData)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao criar categoria',
+        status: error.response?.status
+      }
+    }
+  }
+}
+
+/**
+ * Atualizar uma categoria
+ * @param {number} categoryId - ID da categoria
+ * @param {Object} categoryData - { name }
+ * @returns {Promise} Resposta da API
+ */
+export const updateCategory = async (categoryId, categoryData) => {
+  try {
+    const response = await api.patch(`/categories/${categoryId}`, categoryData)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao atualizar categoria',
+        status: error.response?.status
+      }
+    }
+  }
+}
+
+/**
+ * Deletar uma categoria
+ * @param {number} categoryId - ID da categoria
+ * @returns {Promise} Resposta da API
+ */
+export const deleteCategory = async (categoryId) => {
+  try {
+    const response = await api.delete(`/categories/${categoryId}`)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao deletar categoria',
+        status: error.response?.status
+      }
+    }
+  }
+}
+
+// ==================== PRODUCTS ENDPOINTS ====================
+
+/**
+ * Buscar produtos de uma loja
+ * @param {number} storeId - ID da loja
+ * @returns {Promise} Resposta da API
+ */
+export const getProducts = async (storeId) => {
+  try {
+    const response = await api.get(`/products/store/${storeId}`)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao buscar produtos',
+        status: error.response?.status
+      }
+    }
+  }
+}
+
+/**
+ * Buscar um produto específico
+ * @param {number} productId - ID do produto
+ * @returns {Promise} Resposta da API
+ */
+export const getProduct = async (productId) => {
+  try {
+    const response = await api.get(`/products/${productId}`)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao buscar produto',
+        status: error.response?.status
+      }
+    }
+  }
+}
+
+/**
+ * Criar um novo produto
+ * @param {Object} productData - { store_id, category_id, name, description, price, image_url }
+ * @returns {Promise} Resposta da API
+ */
+export const createProduct = async (productData) => {
+  try {
+    const response = await api.post('/products', productData)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao criar produto',
+        status: error.response?.status
+      }
+    }
+  }
+}
+
+/**
+ * Atualizar um produto
+ * @param {number} productId - ID do produto
+ * @param {Object} productData - { name, description, price, image_url, category_id }
+ * @returns {Promise} Resposta da API
+ */
+export const updateProduct = async (productId, productData) => {
+  try {
+    const response = await api.put(`/products/${productId}`, productData)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao atualizar produto',
+        status: error.response?.status
+      }
+    }
+  }
+}
+
+/**
+ * Deletar um produto
+ * @param {number} productId - ID do produto
+ * @returns {Promise} Resposta da API
+ */
+export const deleteProduct = async (productId) => {
+  try {
+    const response = await api.delete(`/products/${productId}`)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao deletar produto',
+        status: error.response?.status
+      }
+    }
+  }
+}
+
 // ==================== USER ENDPOINTS ====================
 
 /**

@@ -1,7 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import styled from 'styled-components'
+import { 
+  getStore, 
+  getCategories, 
+  createCategory, 
+  updateCategory, 
+  deleteCategory 
+} from '../services/api'
 
 function StoreDetail() {
   const { storeId } = useParams()
@@ -31,75 +38,148 @@ function StoreDetail() {
     imageUrl: ''
   })
 
-  // Dados de exemplo (posteriormente virão da API)
-  const store = {
-    id: storeId,
-    name: 'Loja Principal',
-    description: 'Produtos gerais e eletrônicos'
+  // API States
+  const [store, setStore] = useState(null)
+  const [categories, setCategories] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadingCategories, setLoadingCategories] = useState(false)
+  const [error, setError] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
+  
+  // Notification modal
+  const [showNotificationModal, setShowNotificationModal] = useState(false)
+  const [notificationData, setNotificationData] = useState({ type: '', message: '' })
+
+  const [products, setProducts] = useState([])
+
+  // Fetch store and categories on mount
+  useEffect(() => {
+    fetchStoreData()
+    fetchCategories()
+  }, [storeId])
+
+  const fetchStoreData = async () => {
+    try {
+      setLoading(true)
+      const response = await getStore(storeId)
+      if (response.success) {
+        setStore(response.data)
+      } else {
+        setError(response.error?.message || 'Erro ao carregar loja')
+      }
+    } catch (err) {
+      console.error('❌ Erro ao buscar loja:', err)
+      setError('Erro ao conectar com o servidor')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const [categories, setCategories] = useState([
-    { id: 'cat-001', name: 'Eletrônicos' },
-    { id: 'cat-002', name: 'Roupas' },
-    { id: 'cat-003', name: 'Calçados' },
-    { id: 'cat-004', name: 'Acessórios' }
-  ])
-
-  const [products, setProducts] = useState([
-    {
-      id: 'prod-001',
-      name: 'Smartphone Galaxy X',
-      description: 'Smartphone com 128GB de memória',
-      price: 250000,
-      categoryId: 'cat-001',
-      imageUrl: '/img-404.webp'
-    },
-    {
-      id: 'prod-002',
-      name: 'Camisa Polo',
-      description: 'Camisa polo 100% algodão',
-      price: 15000,
-      categoryId: 'cat-002',
-      imageUrl: '/img-404.webp'
-    },
-    {
-      id: 'prod-003',
-      name: 'Tênis Esportivo',
-      description: 'Tênis para corrida',
-      price: 35000,
-      categoryId: 'cat-003',
-      imageUrl: '/img-404.webp'
+  const fetchCategories = async () => {
+    try {
+      setLoadingCategories(true)
+      const response = await getCategories(storeId)
+      if (response.success) {
+        setCategories(response.data)
+      } else {
+        console.error('Erro ao carregar categorias:', response.error)
+      }
+    } catch (err) {
+      console.error('❌ Erro ao buscar categorias:', err)
+    } finally {
+      setLoadingCategories(false)
     }
-  ])
+  }
 
   // Category Functions
-  const handleAddCategory = () => {
-    if (categoryForm.name.trim()) {
-      const newCategory = {
-        id: `cat-${Date.now()}`,
+  const handleAddCategory = async () => {
+    if (!categoryForm.name.trim()) {
+      setNotificationData({ type: 'error', message: 'Por favor, preencha o nome da categoria' })
+      setShowNotificationModal(true)
+      return
+    }
+
+    try {
+      setIsSaving(true)
+      const response = await createCategory({
+        storeId: parseInt(storeId),
         name: categoryForm.name
+      })
+
+      if (response.success) {
+        await fetchCategories()
+        setShowAddCategoryModal(false)
+        setCategoryForm({ name: '' })
+        setNotificationData({ type: 'success', message: 'Categoria criada com sucesso!' })
+        setShowNotificationModal(true)
+      } else {
+        setNotificationData({ type: 'error', message: response.error?.message || 'Erro ao criar categoria' })
+        setShowNotificationModal(true)
       }
-      setCategories([...categories, newCategory])
-      setCategoryForm({ name: '' })
-      setShowAddCategoryModal(false)
+    } catch (err) {
+      console.error('❌ Erro ao criar categoria:', err)
+      setNotificationData({ type: 'error', message: 'Erro ao conectar com o servidor' })
+      setShowNotificationModal(true)
+    } finally {
+      setIsSaving(false)
     }
   }
 
-  const handleEditCategory = () => {
-    if (categoryForm.name.trim()) {
-      setCategories(categories.map(cat => 
-        cat.id === selectedCategory.id ? { ...cat, name: categoryForm.name } : cat
-      ))
-      setShowEditCategoryModal(false)
-      setSelectedCategory(null)
-      setCategoryForm({ name: '' })
+  const handleEditCategory = async () => {
+    if (!categoryForm.name.trim()) {
+      setNotificationData({ type: 'error', message: 'Por favor, preencha o nome da categoria' })
+      setShowNotificationModal(true)
+      return
+    }
+
+    try {
+      setIsSaving(true)
+      const response = await updateCategory(selectedCategory.id, {
+        name: categoryForm.name
+      })
+
+      if (response.success) {
+        await fetchCategories()
+        setShowEditCategoryModal(false)
+        setSelectedCategory(null)
+        setCategoryForm({ name: '' })
+        setNotificationData({ type: 'success', message: 'Categoria atualizada com sucesso!' })
+        setShowNotificationModal(true)
+      } else {
+        setNotificationData({ type: 'error', message: response.error?.message || 'Erro ao atualizar categoria' })
+        setShowNotificationModal(true)
+      }
+    } catch (err) {
+      console.error('❌ Erro ao atualizar categoria:', err)
+      setNotificationData({ type: 'error', message: 'Erro ao conectar com o servidor' })
+      setShowNotificationModal(true)
+    } finally {
+      setIsSaving(false)
     }
   }
 
-  const handleDeleteCategory = () => {
-    setCategories(categories.filter(cat => cat.id !== selectedCategory.id))
-    setShowDeleteCategoryModal(false)
-    setSelectedCategory(null)
+  const handleDeleteCategory = async () => {
+    try {
+      setIsSaving(true)
+      const response = await deleteCategory(selectedCategory.id)
+
+      if (response.success) {
+        await fetchCategories()
+        setShowDeleteCategoryModal(false)
+        setSelectedCategory(null)
+        setNotificationData({ type: 'success', message: 'Categoria eliminada com sucesso!' })
+        setShowNotificationModal(true)
+      } else {
+        setNotificationData({ type: 'error', message: response.error?.message || 'Erro ao eliminar categoria' })
+        setShowNotificationModal(true)
+      }
+    } catch (err) {
+      console.error('❌ Erro ao eliminar categoria:', err)
+      setNotificationData({ type: 'error', message: 'Erro ao conectar com o servidor' })
+      setShowNotificationModal(true)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   // Product Functions
@@ -163,10 +243,23 @@ function StoreDetail() {
             <span>Voltar para Lojas</span>
           </button>
           
-          <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
-            {store.name}
-          </h1>
-          <p className="text-gray-600">{store.description}</p>
+          {loading ? (
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-whatsapp-primary"></div>
+              <span className="text-gray-600">Carregando...</span>
+            </div>
+          ) : error ? (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-600">{error}</p>
+            </div>
+          ) : store ? (
+            <>
+              <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
+                {store.storeName || store.name}
+              </h1>
+              <p className="text-gray-600">{store.description}</p>
+            </>
+          ) : null}
         </div>
 
         {/* Tabs */}
@@ -209,8 +302,23 @@ function StoreDetail() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {categories.map((category) => (
+            {loadingCategories ? (
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-whatsapp-primary"></div>
+              </div>
+            ) : categories.length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-xl">
+                <p className="text-gray-500 mb-4">Nenhuma categoria criada</p>
+                <button
+                  onClick={() => setShowAddCategoryModal(true)}
+                  className="text-whatsapp-primary font-semibold hover:underline"
+                >
+                  Criar primeira categoria
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {categories.map((category) => (
                 <div
                   key={category.id}
                   className="bg-white rounded-xl shadow p-4 hover:shadow-lg transition flex items-center justify-between"
@@ -243,24 +351,11 @@ function StoreDetail() {
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
-
-            {categories.length === 0 && (
-              <div className="text-center py-12 bg-white rounded-xl">
-                <p className="text-gray-500 mb-4">Nenhuma categoria criada</p>
-                <button
-                  onClick={() => setShowAddCategoryModal(true)}
-                  className="text-whatsapp-primary font-semibold hover:underline"
-                >
-                  Criar primeira categoria
-                </button>
+                ))}
               </div>
             )}
           </div>
-        )}
-
-        {/* Products Tab */}
+        )}        {/* Products Tab */}
         {activeTab === 'products' && (
           <div>
             <div className="flex justify-between items-center mb-6">
@@ -389,10 +484,10 @@ function StoreDetail() {
               </button>
               <button
                 onClick={handleAddCategory}
-                disabled={!categoryForm.name.trim()}
+                disabled={!categoryForm.name.trim() || isSaving}
                 className="px-6 py-2 bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary text-white rounded-lg font-medium hover:shadow-lg transition order-1 sm:order-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Criar Categoria
+                {isSaving ? 'Criando...' : 'Criar Categoria'}
               </button>
             </div>
           </ModalContent>
@@ -437,10 +532,10 @@ function StoreDetail() {
               </button>
               <button
                 onClick={handleEditCategory}
-                disabled={!categoryForm.name.trim()}
+                disabled={!categoryForm.name.trim() || isSaving}
                 className="px-6 py-2 bg-gradient-to-r from-whatsapp-primary to-whatsapp-secondary text-white rounded-lg font-medium hover:shadow-lg transition order-1 sm:order-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Salvar Alterações
+                {isSaving ? 'Salvando...' : 'Salvar Alterações'}
               </button>
             </div>
           </ModalContent>
@@ -465,15 +560,17 @@ function StoreDetail() {
               <div className="flex flex-col sm:flex-row justify-center gap-3">
                 <button
                   onClick={() => setShowDeleteCategoryModal(false)}
-                  className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition order-2 sm:order-1"
+                  disabled={isSaving}
+                  className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition order-2 sm:order-1 disabled:opacity-50"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleDeleteCategory}
-                  className="px-6 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition order-1 sm:order-2"
+                  disabled={isSaving}
+                  className="px-6 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition order-1 sm:order-2 disabled:opacity-50"
                 >
-                  Sim, Eliminar
+                  {isSaving ? 'Eliminando...' : 'Sim, Eliminar'}
                 </button>
               </div>
             </div>
@@ -741,6 +838,40 @@ function StoreDetail() {
               />
             </div>
           </div>
+        </ModalOverlay>
+      )}
+
+      {/* Modal: Notification (Success/Error) */}
+      {showNotificationModal && (
+        <ModalOverlay onClick={() => setShowNotificationModal(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()} className="max-w-md">
+            <div className="text-center">
+              <div className={`mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4 ${
+                notificationData.type === 'success' ? 'bg-green-100' : 'bg-red-100'
+              }`}>
+                <span className="text-3xl">
+                  {notificationData.type === 'success' ? '✅' : '❌'}
+                </span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
+                {notificationData.type === 'success' ? 'Sucesso!' : 'Erro'}
+              </h2>
+              <p className="text-sm sm:text-base text-gray-600 mb-6">
+                {notificationData.message}
+              </p>
+
+              <button
+                onClick={() => setShowNotificationModal(false)}
+                className={`px-6 py-2 text-white rounded-lg font-medium transition ${
+                  notificationData.type === 'success' 
+                    ? 'bg-green-500 hover:bg-green-600' 
+                    : 'bg-red-500 hover:bg-red-600'
+                }`}
+              >
+                OK
+              </button>
+            </div>
+          </ModalContent>
         </ModalOverlay>
       )}
     </div>
