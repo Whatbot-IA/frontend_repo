@@ -940,6 +940,25 @@ export const createContact = async (contactData) => {
 }
 
 /**
+ * Buscar contato por ID
+ * @param {string|number} contactId - ID do contato
+ * @returns {Promise} Resposta da API
+ */
+export const getContactById = async (contactId) => {
+  try {
+    const response = await api.get(`/contacts/${contactId}`)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao buscar contato'
+      }
+    }
+  }
+}
+
+/**
  * Atualizar contato
  * @param {string} contactId - ID do contato
  * @param {Object} contactData - Dados do contato
@@ -947,7 +966,7 @@ export const createContact = async (contactData) => {
  */
 export const updateContact = async (contactId, contactData) => {
   try {
-    const response = await api.put(`/contacts/${contactId}`, contactData)
+    const response = await api.patch(`/contacts/${contactId}`, contactData)
     return { success: true, data: response.data }
   } catch (error) {
     return {

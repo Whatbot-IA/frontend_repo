@@ -1,15 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Sidebar from '../components/Sidebar'
+import { getContacts, createContact, updateContact, deleteContact } from '../services/api'
 
 function Contacts() {
-  // Mock contacts data
-  const [contacts, setContacts] = useState([
-    { id: 1, name: 'João Silva', phone: '+244 923 456 789', createdAt: '2024-01-15' },
-    { id: 2, name: 'Maria Santos', phone: '+244 912 345 678', createdAt: '2024-02-20' },
-    { id: 3, name: 'Pedro Costa', phone: '+244 934 567 890', createdAt: '2024-03-10' },
-    { id: 4, name: 'Ana Ferreira', phone: '+244 945 678 901', createdAt: '2024-03-25' },
-    { id: 5, name: 'Carlos Mendes', phone: '+244 956 789 012', createdAt: '2024-04-05' }
-  ])
+  // Contacts data from API
+  const [contacts, setContacts] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [successMessage, setSuccessMessage] = useState(null)
 
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false)
@@ -17,11 +15,13 @@ function Contacts() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
   const [selectedContact, setSelectedContact] = useState(null)
+  const [isSaving, setIsSaving] = useState(false)
 
   // Form data
   const [formData, setFormData] = useState({
     name: '',
-    phone: ''
+    phoneNumber: '',
+    interest: {}
   })
 
   // View and sort options
@@ -29,68 +29,130 @@ function Contacts() {
   const [sortBy, setSortBy] = useState('name') // 'date' or 'name'
   const [searchQuery, setSearchQuery] = useState('')
 
+  // Fetch contacts from API
+  const fetchContacts = async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const result = await getContacts()
+      if (result.success) {
+        console.log('Contacts loaded:', result.data)
+        setContacts(result.data)
+      } else {
+        console.error('Failed to load contacts:', result.error)
+        setError(result.error.message)
+      }
+    } catch (err) {
+      console.error('Error loading contacts:', err)
+      setError('Erro ao carregar contatos')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Load contacts on mount
+  useEffect(() => {
+    fetchContacts()
+  }, [])
+
   // Filter and sort contacts
   const filteredContacts = contacts
     .filter(contact => {
-      const matchesSearch = contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           contact.phone.includes(searchQuery)
+      const name = contact.name || ''
+      const phone = contact.phoneNumber || ''
+      const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           phone.includes(searchQuery)
       return matchesSearch
     })
     .sort((a, b) => {
       if (sortBy === 'name') {
-        return a.name.localeCompare(b.name)
+        return (a.name || '').localeCompare(b.name || '')
       } else {
         // Sort by date (newest first)
-        return new Date(b.createdAt) - new Date(a.createdAt)
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
       }
     })
 
   // Handle Add Contact
-  const handleAdd = () => {
-    if (!formData.name || !formData.phone) {
-      alert('Por favor, preencha nome e telefone')
+  const handleAdd = async () => {
+    if (!formData.name || !formData.phoneNumber) {
+      setError('Por favor, preencha nome e telefone')
       return
     }
 
-    const newContact = {
-      id: Date.now(),
-      name: formData.name,
-      phone: formData.phone,
-      createdAt: new Date().toISOString().split('T')[0]
-    }
+    setIsSaving(true)
+    setError(null)
 
-    setContacts([...contacts, newContact])
-    setShowAddModal(false)
-    resetForm()
+    try {
+      const result = await createContact({
+        name: formData.name,
+        phoneNumber: formData.phoneNumber,
+        interest: formData.interest || {}
+      })
+
+      if (result.success) {
+        console.log('Contact created:', result.data)
+        setSuccessMessage('Contato criado com sucesso!')
+        setTimeout(() => setSuccessMessage(null), 3000)
+        setShowAddModal(false)
+        resetForm()
+        await fetchContacts()
+      } else {
+        console.error('Failed to create contact:', result.error)
+        setError(result.error.message)
+      }
+    } catch (err) {
+      console.error('Error creating contact:', err)
+      setError('Erro ao criar contato')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   // Handle Edit Contact
   const handleEdit = (contact) => {
     setSelectedContact(contact)
     setFormData({
-      name: contact.name,
-      phone: contact.phone
+      name: contact.name || '',
+      phoneNumber: contact.phoneNumber || '',
+      interest: contact.interest || {}
     })
     setShowEditModal(true)
   }
 
-  const handleUpdate = () => {
-    if (!formData.name || !formData.phone) {
-      alert('Por favor, preencha nome e telefone')
+  const handleUpdate = async () => {
+    if (!formData.name || !formData.phoneNumber) {
+      setError('Por favor, preencha nome e telefone')
       return
     }
 
-    setContacts(contacts.map(c => 
-      c.id === selectedContact.id 
-        ? {
-            ...c,
-            name: formData.name,
-            phone: formData.phone
-          }
-        : c
-    ))
-    setShowEditModal(false)
-    resetForm()
+    setIsSaving(true)
+    setError(null)
+
+    try {
+      const result = await updateContact(selectedContact.id, {
+        name: formData.name,
+        phoneNumber: formData.phoneNumber,
+        interest: formData.interest || {}
+      })
+
+      if (result.success) {
+        console.log('Contact updated:', result.data)
+        setSuccessMessage('Contato atualizado com sucesso!')
+        setTimeout(() => setSuccessMessage(null), 3000)
+        setShowEditModal(false)
+        resetForm()
+        await fetchContacts()
+      } else {
+        console.error('Failed to update contact:', result.error)
+        setError(result.error.message)
+      }
+    } catch (err) {
+      console.error('Error updating contact:', err)
+      setError('Erro ao atualizar contato')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   // Handle Delete Contact
@@ -99,10 +161,30 @@ function Contacts() {
     setShowDeleteModal(true)
   }
 
-  const confirmDelete = () => {
-    setContacts(contacts.filter(c => c.id !== selectedContact.id))
-    setShowDeleteModal(false)
-    setSelectedContact(null)
+  const confirmDelete = async () => {
+    setIsSaving(true)
+    setError(null)
+
+    try {
+      const result = await deleteContact(selectedContact.id)
+
+      if (result.success) {
+        console.log('Contact deleted')
+        setSuccessMessage('Contato deletado com sucesso!')
+        setTimeout(() => setSuccessMessage(null), 3000)
+        setShowDeleteModal(false)
+        setSelectedContact(null)
+        await fetchContacts()
+      } else {
+        console.error('Failed to delete contact:', result.error)
+        setError(result.error.message)
+      }
+    } catch (err) {
+      console.error('Error deleting contact:', err)
+      setError('Erro ao deletar contato')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   // Handle View Contact
@@ -113,8 +195,9 @@ function Contacts() {
 
   // Reset form
   const resetForm = () => {
-    setFormData({ name: '', phone: '' })
+    setFormData({ name: '', phoneNumber: '', interest: {} })
     setSelectedContact(null)
+    setError(null)
   }
 
   return (
@@ -141,6 +224,24 @@ function Contacts() {
             Novo Contato
           </button>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded">
+            <div className="flex items-center">
+              <span className="text-red-700 font-semibold">⚠️ {error}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-4 bg-green-50 border-l-4 border-green-500 p-4 rounded">
+            <div className="flex items-center">
+              <span className="text-green-700 font-semibold">✅ {successMessage}</span>
+            </div>
+          </div>
+        )}
 
         {/* Search, Sort and View Options */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
@@ -190,8 +291,13 @@ function Contacts() {
           </div>
         </div>
 
-        {/* Contacts List */}
-        {filteredContacts.length === 0 ? (
+        {/* Loading State */}
+        {isLoading ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-whatsapp-primary mx-auto mb-3"></div>
+            <p className="text-gray-600">Carregando contatos...</p>
+          </div>
+        ) : filteredContacts.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <img src="/icon/contact.png" alt="No contacts" className="w-8 h-8" />
@@ -219,17 +325,17 @@ function Contacts() {
                 {/* Contact Header */}
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 rounded-full bg-whatsapp-primary text-white flex items-center justify-center text-xl font-bold">
-                    {contact.name.charAt(0).toUpperCase()}
+                    {(contact.name || '?').charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-gray-900">{contact.name}</h3>
-                    <p className="text-sm text-gray-600">{contact.phone}</p>
+                    <h3 className="font-bold text-gray-900">{contact.name || 'Sem nome'}</h3>
+                    <p className="text-sm text-gray-600">{contact.phoneNumber}</p>
                   </div>
                 </div>
 
                 {/* Date */}
                 <div className="text-xs text-gray-500 mb-4">
-                  Adicionado em {new Date(contact.createdAt).toLocaleDateString('pt-BR')}
+                  Adicionado em {contact.createdAt ? new Date(contact.createdAt).toLocaleDateString('pt-BR') : '-'}
                 </div>
 
                 {/* Actions */}
@@ -274,14 +380,14 @@ function Contacts() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-whatsapp-primary text-white flex items-center justify-center font-bold">
-                          {contact.name.charAt(0).toUpperCase()}
+                          {(contact.name || '?').charAt(0).toUpperCase()}
                         </div>
-                        <span className="font-semibold text-gray-900">{contact.name}</span>
+                        <span className="font-semibold text-gray-900">{contact.name || 'Sem nome'}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-gray-700">{contact.phone}</td>
+                    <td className="px-6 py-4 text-gray-700">{contact.phoneNumber}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {new Date(contact.createdAt).toLocaleDateString('pt-BR')}
+                      {contact.createdAt ? new Date(contact.createdAt).toLocaleDateString('pt-BR') : '-'}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2 justify-end">
@@ -318,6 +424,14 @@ function Contacts() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold text-gray-900 mb-6">Novo Contato</h3>
+            
+            {/* Error in Modal */}
+            {error && (
+              <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-3 rounded">
+                <span className="text-red-700 text-sm">⚠️ {error}</span>
+              </div>
+            )}
+            
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -337,8 +451,8 @@ function Contacts() {
                 </label>
                 <input
                   type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  value={formData.phoneNumber}
+                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-primary focus:border-transparent outline-none"
                   placeholder="Ex: +244 923 456 789"
                 />
@@ -346,9 +460,10 @@ function Contacts() {
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={handleAdd}
-                  className="flex-1 bg-whatsapp-primary text-white px-4 py-3 rounded-lg font-semibold hover:bg-whatsapp-secondary transition"
+                  disabled={isSaving}
+                  className="flex-1 bg-whatsapp-primary text-white px-4 py-3 rounded-lg font-semibold hover:bg-whatsapp-secondary transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Adicionar
+                  {isSaving ? 'Adicionando...' : 'Adicionar'}
                 </button>
                 <button
                   onClick={() => { setShowAddModal(false); resetForm(); }}
@@ -367,6 +482,14 @@ function Contacts() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold text-gray-900 mb-6">Editar Contato</h3>
+            
+            {/* Error in Modal */}
+            {error && (
+              <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-3 rounded">
+                <span className="text-red-700 text-sm">⚠️ {error}</span>
+              </div>
+            )}
+            
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -385,17 +508,18 @@ function Contacts() {
                 </label>
                 <input
                   type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  value={formData.phoneNumber}
+                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-primary focus:border-transparent outline-none"
                 />
               </div>
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={handleUpdate}
-                  className="flex-1 bg-whatsapp-primary text-white px-4 py-3 rounded-lg font-semibold hover:bg-whatsapp-secondary transition"
+                  disabled={isSaving}
+                  className="flex-1 bg-whatsapp-primary text-white px-4 py-3 rounded-lg font-semibold hover:bg-whatsapp-secondary transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Salvar
+                  {isSaving ? 'Salvando...' : 'Salvar'}
                 </button>
                 <button
                   onClick={() => { setShowEditModal(false); resetForm(); }}
@@ -427,18 +551,24 @@ function Contacts() {
             <div className="space-y-4">
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-16 h-16 rounded-full bg-whatsapp-primary text-white flex items-center justify-center text-2xl font-bold">
-                  {selectedContact.name.charAt(0).toUpperCase()}
+                  {(selectedContact.name || '?').charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h4 className="text-xl font-bold text-gray-900">{selectedContact.name}</h4>
-                  <p className="text-sm text-gray-500">Adicionado em {new Date(selectedContact.createdAt).toLocaleDateString('pt-BR')}</p>
+                  <h4 className="text-xl font-bold text-gray-900">{selectedContact.name || 'Sem nome'}</h4>
+                  <p className="text-sm text-gray-500">Adicionado em {selectedContact.createdAt ? new Date(selectedContact.createdAt).toLocaleDateString('pt-BR') : '-'}</p>
                 </div>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                   <img src="/icon/phone.png" alt="Phone" className="w-5 h-5" />
-                  <span className="text-gray-900 font-medium">{selectedContact.phone}</span>
+                  <span className="text-gray-900 font-medium">{selectedContact.phoneNumber}</span>
                 </div>
+                {selectedContact.interest && Object.keys(selectedContact.interest).length > 0 && (
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm font-semibold text-gray-700 mb-2">Interesses</p>
+                    <pre className="text-xs text-gray-600 overflow-auto">{JSON.stringify(selectedContact.interest, null, 2)}</pre>
+                  </div>
+                )}
               </div>
               <div className="flex gap-3 pt-4">
                 <button
@@ -473,14 +603,15 @@ function Contacts() {
                 Deletar Contato?
               </h3>
               <p className="text-gray-600 mb-6">
-                Tem certeza que deseja deletar <strong>{selectedContact.name}</strong>? Esta ação não pode ser desfeita.
+                Tem certeza que deseja deletar <strong>{selectedContact.name || 'este contato'}</strong>? Esta ação não pode ser desfeita.
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={confirmDelete}
-                  className="flex-1 bg-red-500 text-white px-4 py-3 rounded-lg font-semibold hover:bg-red-600 transition"
+                  disabled={isSaving}
+                  className="flex-1 bg-red-500 text-white px-4 py-3 rounded-lg font-semibold hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Sim, Deletar
+                  {isSaving ? 'Deletando...' : 'Sim, Deletar'}
                 </button>
                 <button
                   onClick={() => { setShowDeleteModal(false); setSelectedContact(null); }}
