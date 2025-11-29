@@ -230,7 +230,7 @@ function InstanceConfig() {
                 </option>
                 {stores.map((store) => (
                   <option key={store.id} value={store.id}>
-                    {store.name} {store.description && `- ${store.description}`}
+                    {store.storeName} {store.description && `- ${store.description}`}
                   </option>
                 ))}
               </select>
@@ -354,7 +354,7 @@ function InstanceConfig() {
             <div className="flex justify-between py-2 border-b">
               <span className="font-semibold text-gray-700">Loja:</span>
               <span className="text-gray-900">
-                {config.storeId ? stores.find(s => Number(s.id) === Number(config.storeId))?.name || 'Nenhuma' : 'Nenhuma'}
+                {config.storeId ? stores.find(s => parseInt(s.id) === parseInt(config.storeId))?.storeName || 'Nenhuma' : 'Nenhuma'}
               </span>
             </div>
             <div className="flex justify-between py-2 border-b">
