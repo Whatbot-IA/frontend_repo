@@ -197,7 +197,7 @@ function Chat() {
         {/* Chat Container */}
         <div className="flex-1 flex overflow-hidden">
           {/* Chat List Sidebar */}
-          <ChatListContainer showMessages={showMessages}>
+          <ChatListContainer $showMessages={showMessages}>
             <div className="p-4 border-b border-gray-200 bg-white">
               <input
                 type="text"
@@ -212,7 +212,7 @@ function Chat() {
               {filteredChats.map((chat) => (
                 <ChatItem
                   key={chat.id}
-                  active={selectedChat?.id === chat.id}
+                  $active={selectedChat?.id === chat.id}
                   onClick={() => handleSelectChat(chat)}
                 >
                   <div className="flex items-start gap-3">
@@ -257,7 +257,7 @@ function Chat() {
           </ChatListContainer>
 
           {/* Messages Area */}
-          <MessagesContainer showMessages={showMessages}>
+          <MessagesContainer $showMessages={showMessages}>
             {selectedChat ? (
               <>
                 {/* Chat Header */}
@@ -353,7 +353,7 @@ const ChatListContainer = styled.div`
   @media (max-width: 1024px) {
     max-width: 100%;
     border-right: none;
-    display: ${props => props.showMessages ? 'none' : 'flex'};
+    display: ${props => props.$showMessages ? 'none' : 'flex'};
   }
 `
 
@@ -362,10 +362,10 @@ const ChatItem = styled.div`
   border-bottom: 1px solid #f3f4f6;
   cursor: pointer;
   transition: background-color 0.2s;
-  background-color: ${props => props.active ? '#f0fdf4' : 'white'};
+  background-color: ${props => props.$active ? '#f0fdf4' : 'white'};
 
   &:hover {
-    background-color: ${props => props.active ? '#f0fdf4' : '#f9fafb'};
+    background-color: ${props => props.$active ? '#f0fdf4' : '#f9fafb'};
   }
 `
 
@@ -376,7 +376,7 @@ const MessagesContainer = styled.div`
   background: #f9fafb;
   
   @media (max-width: 1024px) {
-    display: ${props => props.showMessages ? 'flex' : 'none'};
+    display: ${props => props.$showMessages ? 'flex' : 'none'};
   }
 `
 
