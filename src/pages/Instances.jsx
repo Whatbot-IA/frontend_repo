@@ -174,10 +174,14 @@ function Instances() {
         
         setConnectionStatus(status)
         
-        // Limpar QR code após conectar
-        if (status === 'ready' || status === 'authenticated') {
+        // Limpar QR code quando autenticado
+        if (status === 'authenticated') {
           setQrCodeUrl(null)
-          // Reload instances after successful connection
+        }
+        
+        // Recarregar instâncias após conexão pronta
+        if (status === 'ready') {
+          setQrCodeUrl(null)
           setTimeout(() => {
             fetchInstances()
           }, 1000)
@@ -207,6 +211,11 @@ function Instances() {
             // Redirecionar para login
             navigate('/signin')
           }, 2000)
+        } else if (errorData.code === 'INSTANCE_LIMIT_EXCEEDED') {
+          // Limite de instâncias atingido
+          setError(errorData.message || 'Limite de instâncias atingido. Atualize seu plano para criar mais instâncias.')
+          setQrCodeUrl(null) // Limpar QR code se estiver mostrando
+          setConnectionStatus('error')
         } else {
           setError(errorData.message || 'Erro desconhecido')
         }
@@ -580,6 +589,15 @@ function Instances() {
                       <div className="text-6xl mb-4">✅</div>
                       <p className="text-green-800 font-bold text-lg">WhatsApp conectado!</p>
                       <p className="text-green-600 text-sm mt-2">Sua instância está pronta para uso</p>
+                    </div>
+                  </div>
+                ) : connectionStatus === 'authenticated' ? (
+                  <div className="w-48 h-48 sm:w-64 sm:h-64 flex items-center justify-center bg-blue-50 rounded-xl border-4 border-blue-500 shadow-lg">
+                    <div className="text-center p-4">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                      <p className="text-blue-800 font-bold text-lg">Autenticado!</p>
+                      <p className="text-blue-600 text-sm mt-2">Sincronizando dados...</p>
+                      <p className="text-blue-500 text-xs mt-1">Aguarde alguns segundos</p>
                     </div>
                   </div>
                 ) : (
