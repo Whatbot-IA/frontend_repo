@@ -71,58 +71,107 @@ function Instances() {
     fetchUserData()
   }, [])
 
+  // Função para verificar e renovar token antes de conectar
+  const ensureValidToken = async () => {
+    const token = localStorage.getItem('accessToken')
+    if (!token) {
+      navigate('/signin')
+      return null
+    }
+
+    // Decodificar token para verificar expiração
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      const expiresAt = payload.exp * 1000 // Converter para ms
+      const now = Date.now()
+      const timeUntilExpiry = expiresAt - now
+
+      // Se falta menos de 5 minutos para expirar, fazer refresh
+      if (timeUntilExpiry < 5 * 60 * 1000) {
+        console.log('Token expirando em breve, fazendo refresh...')
+        
+        try {
+          const { refreshAccessToken } = await import('../services/api')
+          const result = await refreshAccessToken()
+          
+          if (result.success) {
+            console.log('Token renovado com sucesso')
+            return result.data.accessToken
+          } else {
+            console.error('Falha ao renovar token')
+            localStorage.removeItem('accessToken')
+            localStorage.removeItem('refreshToken')
+            navigate('/signin')
+            return null
+          }
+        } catch (error) {
+          console.error('Erro ao renovar token:', error)
+          localStorage.removeItem('accessToken')
+          localStorage.removeItem('refreshToken')
+          navigate('/signin')
+          return null
+        }
+      }
+
+      return token
+    } catch (error) {
+      console.error('Token inválido:', error)
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('refreshToken')
+      navigate('/signin')
+      return null
+    }
+  }
+
   // Socket.io connection - only when modal opens
   useEffect(() => {
     if (!showAddModal) return
 
-    // Get JWT token from localStorage
-    const token = localStorage.getItem('accessToken')
-    if (!token) {
-      console.error('No access token found')
-      setError('Sessão expirada. Faça login novamente.')
-      return
-    }
+    let newSocket = null
+    let isCleanedUp = false
 
-    // Initialize socket connection with JWT authentication
-    const newSocket = io('http://localhost:3000', {
-      transports: ['websocket'],
-      autoConnect: true,
-      auth: { token }
-    })
+    const initializeSocket = async () => {
+      // Garantir que temos um token válido
+      const token = await ensureValidToken()
+      if (!token || isCleanedUp) return
 
-    // Evento: Conexão estabelecida
-    newSocket.on('connect', () => {
-      console.log('Conectado ao WebSocket! Socket ID:', newSocket.id)
-      console.log('Socket connected:', newSocket.connected)
-      setIsSocketConnected(true) // ✅ Atualiza o state
-    })
+      // Initialize socket connection with JWT authentication
+      newSocket = io('http://localhost:3000', {
+        transports: ['websocket'],
+        autoConnect: true,
+        auth: { token }
+      })
 
-    // Evento: Session criada
-    newSocket.on('session_created', ({ sessionId }) => {
-      console.log('Nova sessão criada:', sessionId)
-      setCurrentSessionId(sessionId)
-      // Save sessionId for this instance
-      localStorage.setItem('whatsapp_session', sessionId)
-    })
+      // Evento: Conexão estabelecida
+      newSocket.on('connect', () => {
+        console.log('Conectado ao WebSocket! Socket ID:', newSocket.id)
+        console.log('Socket connected:', newSocket.connected)
+        setIsSocketConnected(true)
+      })
 
-    // Evento: QR Code recebido
-    newSocket.on('qr_code', ({ sessionId, qr }) => {
-      console.log('📱 QR Code recebido do backend!')
-      console.log('SessionId:', sessionId)
-      console.log('QR Code URL:', qr ? qr.substring(0, 50) + '...' : 'null')
-      
-      // Only display QR if it's for our current session
-      if (!currentSessionId || sessionId === currentSessionId) {
+      // Evento: Session criada
+      newSocket.on('session_created', ({ sessionId }) => {
+        console.log('Nova sessão criada:', sessionId)
+        setCurrentSessionId(sessionId)
+        // Save sessionId for this instance
+        localStorage.setItem('whatsapp_session', sessionId)
+      })
+
+      // Evento: QR Code recebido
+      newSocket.on('qr_code', ({ sessionId, qr }) => {
+        console.log('📱 QR Code recebido do backend!')
+        console.log('SessionId:', sessionId)
+        console.log('QR Code URL:', qr ? qr.substring(0, 50) + '...' : 'null')
+        
+        // Update QR code regardless of currentSessionId (we'll get the right one from backend)
         setQrCodeUrl(qr) // Data URI (base64)
-      }
-    })
+        setCurrentSessionId(sessionId) // Update session ID when we get QR
+      })
 
-    // Evento: Status da conexão
-    newSocket.on('connection_status', ({ sessionId, status }) => {
-      console.log('Status:', status, 'SessionId:', sessionId)
-      
-      // Update status if it's for our current session
-      if (!currentSessionId || sessionId === currentSessionId) {
+      // Evento: Status da conexão
+      newSocket.on('connection_status', ({ sessionId, status }) => {
+        console.log('Status:', status, 'SessionId:', sessionId)
+        
         setConnectionStatus(status)
         
         // Limpar QR code após conectar
@@ -133,36 +182,57 @@ function Instances() {
             fetchInstances()
           }, 1000)
         }
-      }
-    })
+      })
 
-    // Evento: Desconectado
-    newSocket.on('disconnect', () => {
-      console.log('Desconectado do WebSocket')
-      setIsSocketConnected(false) // ✅ Reseta
-    })
+      // Evento: Desconectado
+      newSocket.on('disconnect', () => {
+        console.log('Desconectado do WebSocket')
+        setIsSocketConnected(false)
+      })
 
-    // Evento: Erro (por exemplo, limite de instâncias excedido)
-    newSocket.on('error', (errorData) => {
-      console.error('Erro do WebSocket:', errorData)
-      setError(errorData.message || 'Erro desconhecido')
-    })
+      // Evento: Erro de autenticação ou outros erros
+      newSocket.on('error', (errorData) => {
+        console.error('Erro do WebSocket:', errorData)
+        
+        // Tratar token expirado especificamente
+        if (errorData.code === 'TOKEN_EXPIRED') {
+          setError('Sua sessão expirou. Redirecionando para login...')
+          
+          // Aguardar 2 segundos para o usuário ver a mensagem
+          setTimeout(() => {
+            // Limpar tokens
+            localStorage.removeItem('accessToken')
+            localStorage.removeItem('refreshToken')
+            
+            // Redirecionar para login
+            navigate('/signin')
+          }, 2000)
+        } else {
+          setError(errorData.message || 'Erro desconhecido')
+        }
+      })
 
-    socketRef.current = newSocket
+      socketRef.current = newSocket
+    }
+
+    initializeSocket()
 
     // Cleanup when modal closes
     return () => {
       console.log('Fechando conexão WebSocket')
-      newSocket.disconnect()
+      isCleanedUp = true
+      if (newSocket) {
+        newSocket.disconnect()
+      }
       socketRef.current = null
       // Reset states
       setQrCodeUrl(null)
       setConnectionStatus('disconnected')
-      setIsSocketConnected(false) // ✅ Reseta state
+      setIsSocketConnected(false)
       setCurrentSessionId(null)
       setError(null)
     }
-  }, [showAddModal, currentSessionId])
+  }, [showAddModal, navigate])
 
   // Request QR Code when modal opens
   const requestQrCode = () => {

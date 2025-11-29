@@ -156,6 +156,40 @@ export const logout = async () => {
 }
 
 /**
+ * Renovar access token usando refresh token
+ * @returns {Promise} Resposta da API com novo accessToken
+ */
+export const refreshAccessToken = async () => {
+  try {
+    const refreshToken = localStorage.getItem('refreshToken')
+    if (!refreshToken) {
+      return { success: false, error: { message: 'No refresh token available' } }
+    }
+
+    const response = await axios.get(`${API_BASE_URL}/auth/refresh`, {
+      headers: {
+        'Authorization': `Bearer ${refreshToken}`
+      }
+    })
+    
+    if (response.data.accessToken) {
+      localStorage.setItem('accessToken', response.data.accessToken)
+      if (response.data.refreshToken) {
+        localStorage.setItem('refreshToken', response.data.refreshToken)
+      }
+      return { success: true, data: response.data }
+    }
+    
+    return { success: false, error: { message: 'No access token in response' } }
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error.response?.data || { message: error.message } 
+    }
+  }
+}
+
+/**
  * Recuperar senha
  * @param {string} email - Email do usuário
  * @returns {Promise} Resposta da API
@@ -212,44 +246,6 @@ export const confirmResetPassword = async (data) => {
       error: {
         message: error.response?.data?.message || 'Erro ao redefinir senha',
         status: error.response?.status
-      }
-    }
-  }
-}
-
-/**
- * Renovar access token usando refresh token
- * @returns {Promise} Resposta da API
- */
-export const refreshAccessToken = async () => {
-  try {
-    const refreshToken = localStorage.getItem('refreshToken')
-    if (!refreshToken) {
-      throw new Error('No refresh token available')
-    }
-
-    const response = await axios.get('http://localhost:3000/auth/refresh', {
-      headers: {
-        Authorization: `Bearer ${refreshToken}`
-      }
-    })
-
-    // Salvar novos tokens
-    if (response.data.accessToken) {
-      localStorage.setItem('accessToken', response.data.accessToken)
-    }
-    if (response.data.refreshToken) {
-      localStorage.setItem('refreshToken', response.data.refreshToken)
-    }
-
-    return { success: true, data: response.data }
-  } catch (error) {
-    localStorage.removeItem('accessToken')
-    localStorage.removeItem('refreshToken')
-    return {
-      success: false,
-      error: {
-        message: error.response?.data?.message || 'Erro ao renovar token'
       }
     }
   }
