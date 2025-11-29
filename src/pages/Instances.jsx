@@ -450,7 +450,7 @@ function Instances() {
                           Chat
                         </button>
                         <button
-                          onClick={() => navigate(`/instances/${instance.sessionId}/config`)}
+                          onClick={() => navigate(`/instances/${instance.id}/config`)}
                           className="bg-purple-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-600 transition flex items-center gap-2"
                         >
                           <img src="/icon/setting.png" alt="Config" className="w-4 h-4" />
@@ -519,7 +519,7 @@ function Instances() {
                       Chat
                     </button>
                     <button
-                      onClick={() => navigate(`/instances/${instance.sessionId}/config`)}
+                      onClick={() => navigate(`/instances/${instance.id}/config`)}
                       className="bg-purple-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-purple-600 transition flex items-center justify-center gap-2"
                     >
                       <img src="/icon/setting.png" alt="Config" className="w-4 h-4" />

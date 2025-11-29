@@ -802,6 +802,56 @@ export const deleteWhatsAppInstance = async (sessionId) => {
   }
 }
 
+/**
+ * Buscar configuração de uma instância
+ * @param {string|number} instanceId - ID da instância
+ * @returns {Promise} Resposta da API
+ */
+export const getInstanceConfig = async (instanceId) => {
+  try {
+    const response = await api.get(`/instances/${instanceId}/config`)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        status: error.response?.status,
+        statusCode: error.response?.data?.statusCode,
+        message: error.response?.data?.message || 'Erro ao buscar configuração da instância',
+        data: error.response?.data
+      }
+    }
+  }
+}
+
+/**
+ * Atualizar configuração de uma instância
+ * @param {string|number} instanceId - ID da instância
+ * @param {Object} configData - Dados de configuração
+ * @param {string} configData.promptSystem - Prompt do sistema
+ * @param {number} configData.temperature - Temperature (0-1)
+ * @param {number} configData.maxToken - Máximo de tokens
+ * @param {boolean} configData.iaResponse - Ativar resposta IA
+ * @param {number} configData.storeId - ID da loja
+ * @returns {Promise} Resposta da API
+ */
+export const updateInstanceConfig = async (instanceId, configData) => {
+  try {
+    const response = await api.patch(`/instances/${instanceId}/config`, configData)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        status: error.response?.status,
+        statusCode: error.response?.data?.statusCode,
+        message: error.response?.data?.message || 'Erro ao atualizar configuração da instância',
+        data: error.response?.data
+      }
+    }
+  }
+}
+
 // ==================== CONTACTS ENDPOINTS ====================
 
 /**

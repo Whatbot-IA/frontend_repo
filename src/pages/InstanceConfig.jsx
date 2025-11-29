@@ -1,46 +1,138 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
+import { getInstanceConfig, updateInstanceConfig, getStores } from '../services/api'
 
 function InstanceConfig() {
   const navigate = useNavigate()
   const { instanceId } = useParams()
 
-  // Mock instance data
+  // Instance data
   const [instance, setInstance] = useState({
     id: instanceId,
-    name: 'Vendas Principal',
-    phone: '+244 923 456 789',
-    status: 'connected'
+    name: '',
+    phone: '',
+    status: ''
   })
 
-  // Mock stores data
-  const [stores, setStores] = useState([
-    { id: 1, name: 'Loja Tech Store', description: 'Eletrônicos e gadgets' },
-    { id: 2, name: 'Fashion Store', description: 'Roupas e acessórios' },
-    { id: 3, name: 'Food Store', description: 'Alimentos e bebidas' }
-  ])
+  // Stores data from API
+  const [stores, setStores] = useState([])
+  const [isLoadingStores, setIsLoadingStores] = useState(true)
 
   // Configuration state
   const [config, setConfig] = useState({
-    systemPrompt: `Você é um assistente virtual de vendas amigável e prestativo.
-Sua função é ajudar os clientes a encontrar produtos, responder perguntas sobre a loja e processar pedidos.
-Sempre seja cortês, profissional e responda em português.
-Se não souber algo, admita e ofereça ajuda alternativa.`,
+    promptSystem: '',
     storeId: null,
     temperature: 0.7,
-    maxTokens: 500
+    maxToken: 500,
+    iaResponse: true
   })
 
+  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState(null)
+  const [successMessage, setSuccessMessage] = useState(null)
 
-  const handleSave = () => {
+  // Fetch configuration on mount
+  useEffect(() => {
+    const fetchConfig = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const result = await getInstanceConfig(instanceId)
+        if (result.success) {
+          console.log('Config loaded:', result.data)
+          setConfig({
+            promptSystem: result.data.promptSystem || '',
+            storeId: result.data.storeId || null,
+            // Parse temperature as float (API returns string)
+            temperature: parseFloat(result.data.temperature) || 0.7,
+            maxToken: parseInt(result.data.maxToken) || 500,
+            iaResponse: result.data.iaResponse ?? true
+          })
+          // Update instance info if available
+          if (result.data.instance) {
+            setInstance({
+              id: instanceId,
+              name: result.data.instance.name || '',
+              phone: result.data.instance.phoneNumber || '',
+              status: result.data.instance.status || ''
+            })
+          }
+        } else {
+          console.error('Failed to load config:', result.error)
+          setError(result.error.message)
+        }
+      } catch (err) {
+        console.error('Error loading config:', err)
+        setError('Erro ao carregar configuração')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchConfig()
+  }, [instanceId])
+
+  // Fetch stores on mount
+  useEffect(() => {
+    const fetchStores = async () => {
+      setIsLoadingStores(true)
+      try {
+        const result = await getStores()
+        if (result.success) {
+          console.log('Stores loaded:', result.data)
+          setStores(result.data)
+        } else {
+          console.error('Failed to load stores:', result.error)
+        }
+      } catch (err) {
+        console.error('Error loading stores:', err)
+      } finally {
+        setIsLoadingStores(false)
+      }
+    }
+
+    fetchStores()
+  }, [])
+
+  const handleSave = async () => {
     setIsSaving(true)
-    // Simulate API call
-    setTimeout(() => {
-      alert('Configurações salvas com sucesso!')
+    setError(null)
+    setSuccessMessage(null)
+    
+    try {
+      // Prepare config data with correct types
+      const configData = {
+        promptSystem: config.promptSystem,
+        temperature: parseFloat(config.temperature),
+        maxToken: parseInt(config.maxToken),
+        iaResponse: Boolean(config.iaResponse)
+      }
+      
+      // Only include storeId if it's set (not null)
+      if (config.storeId) {
+        configData.storeId = parseInt(config.storeId)
+      }
+      
+      console.log('Saving config:', configData)
+      
+      const result = await updateInstanceConfig(instanceId, configData)
+      
+      if (result.success) {
+        console.log('Config saved:', result.data)
+        setSuccessMessage('Configurações salvas com sucesso!')
+        setTimeout(() => setSuccessMessage(null), 3000)
+      } else {
+        console.error('Failed to save config:', result.error)
+        setError(result.error.message)
+      }
+    } catch (err) {
+      console.error('Error saving config:', err)
+      setError('Erro ao salvar configurações')
+    } finally {
       setIsSaving(false)
-    }, 1000)
+    }
   }
 
   return (
@@ -62,13 +154,63 @@ Se não souber algo, admita e ofereça ajuda alternativa.`,
             Configuração da Instância
           </h1>
           <p className="text-gray-600">
-            {instance.name} • {instance.phone}
+            {instance.name || `Instância ${instanceId}`} {instance.phone && `• ${instance.phone}`}
           </p>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded">
+            <div className="flex items-center">
+              <span className="text-red-700 font-semibold">⚠️ {error}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-4 bg-green-50 border-l-4 border-green-500 p-4 rounded">
+            <div className="flex items-center">
+              <span className="text-green-700 font-semibold">✅ {successMessage}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {isLoading ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-whatsapp-primary mx-auto mb-3"></div>
+            <p className="text-gray-600">Carregando configurações...</p>
+          </div>
+        ) : (
+          <>
         {/* Configuration Form */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="space-y-6">
+            {/* IA Response Toggle */}
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700">
+                  Resposta Automática com IA
+                </label>
+                <p className="text-sm text-gray-500">
+                  Ative para que a IA responda automaticamente às mensagens
+                </p>
+              </div>
+              <button
+                onClick={() => setConfig({ ...config, iaResponse: !config.iaResponse })}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  config.iaResponse ? 'bg-whatsapp-primary' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    config.iaResponse ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
             {/* Store Selection */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -81,11 +223,14 @@ Se não souber algo, admita e ofereça ajuda alternativa.`,
                 value={config.storeId || ''}
                 onChange={(e) => setConfig({ ...config, storeId: e.target.value ? parseInt(e.target.value) : null })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-primary focus:border-transparent outline-none"
+                disabled={isLoadingStores}
               >
-                <option value="">Nenhuma loja selecionada</option>
+                <option value="">
+                  {isLoadingStores ? 'Carregando lojas...' : 'Nenhuma loja selecionada'}
+                </option>
                 {stores.map((store) => (
                   <option key={store.id} value={store.id}>
-                    {store.name} - {store.description}
+                    {store.name} {store.description && `- ${store.description}`}
                   </option>
                 ))}
               </select>
@@ -100,8 +245,8 @@ Se não souber algo, admita e ofereça ajuda alternativa.`,
                 Defina como o agente AI deve se comportar e responder aos clientes
               </p>
               <textarea
-                value={config.systemPrompt}
-                onChange={(e) => setConfig({ ...config, systemPrompt: e.target.value })}
+                value={config.promptSystem}
+                onChange={(e) => setConfig({ ...config, promptSystem: e.target.value })}
                 rows={10}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-primary focus:border-transparent outline-none font-mono text-sm"
                 placeholder="Digite as instruções para o agente AI..."
@@ -147,8 +292,8 @@ Se não souber algo, admita e ofereça ajuda alternativa.`,
                     min="100"
                     max="2000"
                     step="50"
-                    value={config.maxTokens}
-                    onChange={(e) => setConfig({ ...config, maxTokens: parseInt(e.target.value) })}
+                    value={config.maxToken}
+                    onChange={(e) => setConfig({ ...config, maxToken: parseInt(e.target.value) })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-primary focus:border-transparent outline-none"
                   />
                   <p className="text-xs text-gray-500 mt-2">
@@ -201,9 +346,15 @@ Se não souber algo, admita e ofereça ajuda alternativa.`,
           </h3>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between py-2 border-b">
+              <span className="font-semibold text-gray-700">IA Ativa:</span>
+              <span className={`px-2 py-1 rounded text-xs font-semibold ${config.iaResponse ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                {config.iaResponse ? 'Sim' : 'Não'}
+              </span>
+            </div>
+            <div className="flex justify-between py-2 border-b">
               <span className="font-semibold text-gray-700">Loja:</span>
               <span className="text-gray-900">
-                {config.storeId ? stores.find(s => s.id === config.storeId)?.name : 'Nenhuma'}
+                {config.storeId ? stores.find(s => Number(s.id) === Number(config.storeId))?.name || 'Nenhuma' : 'Nenhuma'}
               </span>
             </div>
             <div className="flex justify-between py-2 border-b">
@@ -212,14 +363,16 @@ Se não souber algo, admita e ofereça ajuda alternativa.`,
             </div>
             <div className="flex justify-between py-2 border-b">
               <span className="font-semibold text-gray-700">Max Tokens:</span>
-              <span className="text-gray-900">{config.maxTokens}</span>
+              <span className="text-gray-900">{config.maxToken}</span>
             </div>
             <div className="flex justify-between py-2">
               <span className="font-semibold text-gray-700">Prompt Length:</span>
-              <span className="text-gray-900">{config.systemPrompt.length} caracteres</span>
+              <span className="text-gray-900">{config.promptSystem.length} caracteres</span>
             </div>
           </div>
         </div>
+          </>
+        )}
       </main>
     </div>
   )
