@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
-import { getInstanceConfig, updateInstanceConfig, getStores } from '../services/api'
+import { getInstanceConfig, updateInstanceConfig, getStores, getWhatsAppInstances } from '../services/api'
 
 function InstanceConfig() {
   const navigate = useNavigate()
@@ -50,15 +50,6 @@ function InstanceConfig() {
             maxToken: parseInt(result.data.maxToken) || 500,
             iaResponse: result.data.iaResponse ?? true
           })
-          // Update instance info if available
-          if (result.data.instance) {
-            setInstance({
-              id: instanceId,
-              name: result.data.instance.name || '',
-              phone: result.data.instance.phoneNumber || '',
-              status: result.data.instance.status || ''
-            })
-          }
         } else {
           console.error('Failed to load config:', result.error)
           setError(result.error.message)
@@ -72,6 +63,32 @@ function InstanceConfig() {
     }
 
     fetchConfig()
+  }, [instanceId])
+
+  // Fetch instance details
+  useEffect(() => {
+    const fetchInstanceDetails = async () => {
+      try {
+        const result = await getWhatsAppInstances()
+        if (result.success) {
+          // Find the instance by id
+          const foundInstance = result.data.find(inst => String(inst.id) === String(instanceId))
+          if (foundInstance) {
+            console.log('Instance found:', foundInstance)
+            setInstance({
+              id: instanceId,
+              name: foundInstance.name || foundInstance.phoneNumber || '',
+              phone: foundInstance.phoneNumber || '',
+              status: foundInstance.status || ''
+            })
+          }
+        }
+      } catch (err) {
+        console.error('Error loading instance details:', err)
+      }
+    }
+
+    fetchInstanceDetails()
   }, [instanceId])
 
   // Fetch stores on mount
