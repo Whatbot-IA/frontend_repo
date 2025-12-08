@@ -451,7 +451,7 @@ function Instances() {
                           Info
                         </button>
                         <button
-                          onClick={() => navigate(`/instances/${instance.sessionId}/chat`)}
+                          onClick={() => navigate(`/instances/${instance.id}/chat`)}
                           className="bg-whatsapp-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-whatsapp-secondary transition flex items-center gap-2"
                           disabled={instance.status !== 'ready' && instance.status !== 'connected'}
                         >
@@ -520,7 +520,7 @@ function Instances() {
                       Info
                     </button>
                     <button
-                      onClick={() => navigate(`/instances/${instance.sessionId}/chat`)}
+                      onClick={() => navigate(`/instances/${instance.id}/chat`)}
                       className="bg-whatsapp-primary text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-whatsapp-secondary transition flex items-center justify-center gap-2"
                       disabled={instance.status !== 'ready' && instance.status !== 'connected'}
                     >

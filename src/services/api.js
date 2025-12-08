@@ -997,6 +997,97 @@ export const deleteContact = async (contactId) => {
   }
 }
 
+// ==================== CHATS ENDPOINTS ====================
+
+/**
+ * Buscar todos os chats de uma instância
+ * @param {string|number} instanceId - ID da instância
+ * @returns {Promise} Lista de chats
+ */
+export const getChats = async (instanceId) => {
+  try {
+    console.log('🌐 API Request: GET /chats?instanceId=' + instanceId)
+    const response = await api.get(`/chats?instanceId=${instanceId}`)
+    console.log('✅ API Response:', response.data)
+    return { success: true, data: response.data }
+  } catch (error) {
+    console.error('❌ API Error:', error.response?.data || error.message)
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao buscar chats'
+      }
+    }
+  }
+}
+
+/**
+ * Buscar chat por ID
+ * @param {string|number} chatId - ID do chat
+ * @returns {Promise} Dados do chat
+ */
+export const getChatById = async (chatId) => {
+  try {
+    const response = await api.get(`/chats/${chatId}`)
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao buscar chat'
+      }
+    }
+  }
+}
+
+// ==================== MESSAGES ENDPOINTS ====================
+
+/**
+ * Buscar todas as mensagens de um chat
+ * @param {string|number} chatId - ID do chat
+ * @returns {Promise} Lista de mensagens
+ */
+export const getMessages = async (chatId) => {
+  try {
+    console.log('🌐 API Request: GET /messages?chatId=' + chatId)
+    const response = await api.get(`/messages?chatId=${chatId}`)
+    console.log('✅ API Response:', response.data)
+    return { success: true, data: response.data }
+  } catch (error) {
+    console.error('❌ API Error:', error.response?.data || error.message)
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao buscar mensagens'
+      }
+    }
+  }
+}
+
+/**
+ * Enviar nova mensagem
+ * @param {string|number} chatId - ID do chat
+ * @param {Object} messageData - Dados da mensagem
+ * @param {string} messageData.text - Texto da mensagem
+ * @returns {Promise} Mensagem criada
+ */
+export const sendMessage = async (chatId, messageData) => {
+  try {
+    const response = await api.post(`/messages`, {
+      chatId,
+      ...messageData
+    })
+    return { success: true, data: response.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Erro ao enviar mensagem'
+      }
+    }
+  }
+}
+
 // ==================== NOTIFICATIONS ENDPOINTS ====================
 
 /**

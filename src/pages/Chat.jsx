@@ -1,146 +1,87 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import styled from 'styled-components'
+import { useRealtimeChats, useRealtimeMessages } from '../hooks/useRealtime'
+import { sendMessage, getContacts } from '../services/api'
+import Loader from '../components/Loader'
 
 function Chat() {
   const { instanceId } = useParams()
   const navigate = useNavigate()
   
+  // Log para debug
+  console.log('📱 Chat page loaded with instanceId:', instanceId)
+  
   const [selectedChat, setSelectedChat] = useState(null)
   const [messageInput, setMessageInput] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [showMessages, setShowMessages] = useState(false) // Para controle mobile
+  const [isSending, setIsSending] = useState(false)
+  const [contactsMap, setContactsMap] = useState({}) // Mapa de telefone -> nome do contato
 
-  // Dados de exemplo (posteriormente virão da API)
+  // Usar hooks de Realtime
+  const { chats, isLoading: isLoadingChats, error: chatsError } = useRealtimeChats(instanceId)
+  const { messages, isLoading: isLoadingMessages, error: messagesError } = useRealtimeMessages(selectedChat?.id)
+
+  // Buscar lista de contatos ao carregar
+  useEffect(() => {
+    const loadContacts = async () => {
+      try {
+        const response = await getContacts()
+        console.log('📞 Contacts API response:', response)
+        if (response.success) {
+          // Criar mapa de telefone -> nome
+          const map = {}
+          response.data.forEach(contact => {
+            console.log('👤 Contact:', contact)
+            // O campo correto é phoneNumber, não phone
+            if (contact.phoneNumber) {
+              // Normalizar telefone removendo caracteres especiais
+              const normalizedPhone = contact.phoneNumber.replace(/[^0-9]/g, '')
+              map[normalizedPhone] = contact.name
+              console.log(`  → Mapped: ${normalizedPhone} => ${contact.name}`)
+            }
+          })
+          setContactsMap(map)
+          console.log('📇 Contacts map loaded:', map)
+        }
+      } catch (error) {
+        console.error('Error loading contacts:', error)
+      }
+    }
+    loadContacts()
+  }, [])
+
+  // Dados da instância (posteriormente virá da API)
   const instance = {
     id: instanceId,
     name: 'Vendas Principal',
     phone: '+244 923 456 789'
   }
 
-  const [chats] = useState([
-    {
-      id: 'chat-001',
-      clientNumber: '+244 912 345 678',
-      clientName: 'Cliente 1',
-      lastMessage: 'Obrigado pelo atendimento!',
-      lastMessageTime: '10:30',
-      unreadCount: 2,
-      isOnline: true
-    },
-    {
-      id: 'chat-002',
-      clientNumber: '+244 923 456 789',
-      clientName: 'Cliente 2',
-      lastMessage: 'Quanto custa esse produto?',
-      lastMessageTime: '09:15',
-      unreadCount: 0,
-      isOnline: false
-    },
-    {
-      id: 'chat-003',
-      clientNumber: '+244 934 567 890',
-      clientName: 'Cliente 3',
-      lastMessage: 'Está disponível para entrega?',
-      lastMessageTime: 'Ontem',
-      unreadCount: 5,
-      isOnline: true
-    },
-    {
-      id: 'chat-004',
-      clientNumber: '+244 945 678 901',
-      clientName: 'Cliente 4',
-      lastMessage: 'Perfeito, vou fazer o pedido',
-      lastMessageTime: 'Ontem',
-      unreadCount: 0,
-      isOnline: false
-    },
-    {
-      id: 'chat-005',
-      clientNumber: '+244 956 789 012',
-      clientName: 'Cliente 5',
-      lastMessage: 'Bom dia! Gostaria de saber...',
-      lastMessageTime: '15/10',
-      unreadCount: 1,
-      isOnline: false
-    }
-  ])
-
-  const [messages, setMessages] = useState({
-    'chat-001': [
-      {
-        id: 'msg-001',
-        text: 'Olá! Gostaria de saber mais sobre os produtos.',
-        sender: 'client',
-        time: '10:20',
-        date: '30/10/2024'
-      },
-      {
-        id: 'msg-002',
-        text: 'Olá! Claro, temos vários produtos disponíveis. O que você procura?',
-        sender: 'agent',
-        time: '10:22',
-        date: '30/10/2024'
-      },
-      {
-        id: 'msg-003',
-        text: 'Estou interessado em smartphones.',
-        sender: 'client',
-        time: '10:25',
-        date: '30/10/2024'
-      },
-      {
-        id: 'msg-004',
-        text: 'Temos o Smartphone Galaxy X por 250.000 AOA com 128GB de memória.',
-        sender: 'agent',
-        time: '10:27',
-        date: '30/10/2024'
-      },
-      {
-        id: 'msg-005',
-        text: 'Obrigado pelo atendimento!',
-        sender: 'client',
-        time: '10:30',
-        date: '30/10/2024'
-      }
-    ],
-    'chat-002': [
-      {
-        id: 'msg-006',
-        text: 'Quanto custa esse produto?',
-        sender: 'client',
-        time: '09:15',
-        date: '30/10/2024'
-      }
-    ],
-    'chat-003': [
-      {
-        id: 'msg-007',
-        text: 'Está disponível para entrega?',
-        sender: 'client',
-        time: '08:45',
-        date: '29/10/2024'
-      }
-    ]
-  })
-
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (messageInput.trim() && selectedChat) {
-      const newMessage = {
-        id: `msg-${Date.now()}`,
-        text: messageInput,
-        sender: 'agent',
-        time: new Date().toLocaleTimeString('pt-AO', { hour: '2-digit', minute: '2-digit' }),
-        date: new Date().toLocaleDateString('pt-AO')
+      try {
+        setIsSending(true)
+        
+        const response = await sendMessage(selectedChat.id, {
+          text: messageInput
+        })
+
+        if (response.success) {
+          setMessageInput('')
+          // A mensagem será adicionada automaticamente via Realtime
+        } else {
+          console.error('Erro ao enviar mensagem:', response.error)
+          alert(response.error?.message || 'Erro ao enviar mensagem')
+        }
+      } catch (error) {
+        console.error('Erro ao enviar mensagem:', error)
+        alert('Erro ao enviar mensagem')
+      } finally {
+        setIsSending(false)
       }
-
-      setMessages({
-        ...messages,
-        [selectedChat.id]: [...(messages[selectedChat.id] || []), newMessage]
-      })
-
-      setMessageInput('')
     }
   }
 
@@ -151,18 +92,49 @@ function Chat() {
     }
   }
 
-  const filteredChats = chats.filter(chat =>
-    chat.clientNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    chat.clientName.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredChats = chats.filter(chat => {
+    const clientPhone = chat.clientPhone || ''
+    const contactName = chat.contact?.name || ''
+    const query = searchQuery.toLowerCase()
+    
+    return clientPhone.toLowerCase().includes(query) ||
+           contactName.toLowerCase().includes(query)
+  })
 
   const handleSelectChat = (chat) => {
+    console.log('📞 Selected chat:', chat)
     setSelectedChat(chat)
     setShowMessages(true) // Mostra mensagens no mobile
   }
 
   const handleBackToList = () => {
     setShowMessages(false) // Volta para lista no mobile
+  }
+
+  // Função helper para obter nome de exibição consistente
+  const getDisplayInfo = (chat) => {
+    const clientPhone = chat?.clientPhone || 'Desconhecido'
+    // Buscar nome do contato no mapa (fonte de verdade)
+    const normalizedPhone = clientPhone.replace(/[^0-9]/g, '')
+    let contactName = contactsMap[normalizedPhone] || null
+    
+    // Fallback: se não encontrar no mapa, usar o nome que vem do chat
+    if (!contactName && chat?.contact?.name) {
+      contactName = chat.contact.name
+    }
+    
+    const displayName = contactName || `+${clientPhone}`
+    
+    console.log(`🔍 Display info for ${clientPhone}:`, { normalizedPhone, contactName, fromMap: !!contactsMap[normalizedPhone], fromChat: !!chat?.contact?.name })
+    
+    return { clientPhone, contactName, displayName }
+  }
+
+  // Função helper para obter nome do contato por telefone
+  const getContactNameByPhone = (phone) => {
+    if (!phone) return null
+    const normalizedPhone = phone.replace(/[^0-9]/g, '')
+    return contactsMap[normalizedPhone] || null
   }
 
   return (
@@ -209,49 +181,68 @@ function Chat() {
             </div>
 
             <div className="overflow-y-auto flex-1">
-              {filteredChats.map((chat) => (
-                <ChatItem
-                  key={chat.id}
-                  $active={selectedChat?.id === chat.id}
-                  onClick={() => handleSelectChat(chat)}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="relative">
-                      <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-white font-bold">
-                        {chat.clientName.charAt(0)}
-                      </div>
-                      {chat.isOnline && (
-                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-baseline mb-1">
-                        <h3 className="font-semibold text-gray-900 truncate">
-                          {chat.clientNumber}
-                        </h3>
-                        <span className="text-xs text-gray-500 ml-2">
-                          {chat.lastMessageTime}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <p className="text-sm text-gray-600 truncate">
-                          {chat.lastMessage}
-                        </p>
-                        {chat.unreadCount > 0 && (
-                          <span className="ml-2 bg-whatsapp-primary text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-                            {chat.unreadCount}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </ChatItem>
-              ))}
-
-              {filteredChats.length === 0 && (
+              {isLoadingChats ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader />
+                </div>
+              ) : chatsError ? (
+                <div className="p-4 text-center text-red-500">
+                  <p>⚠️ {chatsError}</p>
+                </div>
+              ) : filteredChats.length === 0 ? (
                 <div className="p-8 text-center text-gray-500">
                   <p>Nenhuma conversa encontrada</p>
                 </div>
+              ) : (
+                filteredChats.map((chat) => {
+                  // Se o clientPhone estiver incorreto, tenta buscar das mensagens
+                  let actualClientPhone = chat.clientPhone || 'Desconhecido'
+                  
+                  // Se tiver mensagens deste chat carregadas, pegar o telefone real
+                  if ((actualClientPhone === 'Desconhecido' || !actualClientPhone) && messages.length > 0 && selectedChat?.id === chat.id) {
+                    const clientMessage = messages.find(m => m.instanceChat?.clientPhone)
+                    if (clientMessage) {
+                      actualClientPhone = clientMessage.instanceChat.clientPhone
+                    }
+                  }
+                  
+                  // Buscar nome do contato usando o telefone real
+                  const normalizedPhone = actualClientPhone.replace(/[^0-9]/g, '')
+                  const contactName = contactsMap[normalizedPhone] || chat.contact?.name || null
+                  const displayName = contactName || `+${actualClientPhone}`
+                  const createdAt = chat.createdAt
+                  
+                  return (
+                    <ChatItem
+                      key={chat.id}
+                      $active={selectedChat?.id === chat.id}
+                      onClick={() => handleSelectChat(chat)}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="relative">
+                          <div className="w-12 h-12 rounded-full bg-whatsapp-primary text-white flex items-center justify-center text-lg font-bold">
+                            {displayName.charAt(0).toUpperCase()}
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-baseline mb-1">
+                            <h3 className="font-semibold text-gray-900 truncate">
+                              {displayName}
+                            </h3>
+                            <span className="text-xs text-gray-500 ml-2">
+                              {createdAt ? new Date(createdAt).toLocaleDateString('pt-AO', { day: '2-digit', month: '2-digit' }) : ''}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <p className="text-sm text-gray-500">
+                              {contactName ? `+${actualClientPhone}` : 'Clique para ver mensagens'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </ChatItem>
+                  )
+                })
               )}
             </div>
           </ChatListContainer>
@@ -270,36 +261,99 @@ function Chat() {
                     <span className="text-2xl">←</span>
                   </button>
                   
-                  <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-bold">
-                    {selectedChat.clientName.charAt(0)}
-                  </div>
-                  <div>
-                    <h2 className="font-semibold text-gray-900">
-                      {selectedChat.clientNumber}
-                    </h2>
-                    <p className="text-xs text-gray-500">
-                      {selectedChat.isOnline ? 'Online' : 'Offline'}
-                    </p>
-                  </div>
+                  {(() => {
+                    // Tentar obter o telefone real das mensagens se o chat estiver incorreto
+                    let actualClientPhone = selectedChat.clientPhone
+                    if (messages.length > 0 && (actualClientPhone === 'Desconhecido' || !actualClientPhone)) {
+                      // Pegar o telefone da primeira mensagem do cliente
+                      const clientMessage = messages.find(m => m.instanceChat?.clientPhone)
+                      if (clientMessage) {
+                        actualClientPhone = clientMessage.instanceChat.clientPhone
+                      }
+                    }
+                    
+                    // Buscar nome do contato usando o telefone real
+                    const normalizedPhone = actualClientPhone?.replace(/[^0-9]/g, '') || ''
+                    const contactName = contactsMap[normalizedPhone] || selectedChat.contact?.name || null
+                    const displayName = contactName || (actualClientPhone ? `+${actualClientPhone}` : 'Desconhecido')
+                    
+                    return (
+                      <>
+                        <div className="w-10 h-10 rounded-full bg-whatsapp-primary text-white flex items-center justify-center text-lg font-bold">
+                          {displayName.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <h2 className="font-semibold text-gray-900">
+                            {displayName}
+                          </h2>
+                          <p className="text-xs text-gray-500">
+                            {contactName ? `+${actualClientPhone}` : `Chat ID: ${selectedChat.id}`}
+                          </p>
+                        </div>
+                      </>
+                    )
+                  })()}
                 </div>
 
                 {/* Messages */}
                 <MessagesArea>
-                  {(messages[selectedChat.id] || []).map((message) => (
-                    <MessageBubble key={message.id} sender={message.sender}>
-                      <div className="message-content">
-                        {message.text}
+                  {isLoadingMessages ? (
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="text-gray-500 text-center">
+                        <div className="mb-3">
+                          <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-gray-300 border-t-whatsapp-primary"></div>
+                        </div>
+                        <p className="text-sm">Carregando as mensagens...</p>
                       </div>
-                      <div className="message-time">
-                        {message.time}
-                      </div>
-                    </MessageBubble>
-                  ))}
-
-                  {(!messages[selectedChat.id] || messages[selectedChat.id].length === 0) && (
+                    </div>
+                  ) : messagesError ? (
+                    <div className="flex-1 flex items-center justify-center text-red-500">
+                      <p>⚠️ {messagesError}</p>
+                    </div>
+                  ) : messages.length === 0 ? (
                     <div className="flex-1 flex items-center justify-center text-gray-500">
                       <p>Nenhuma mensagem ainda. Inicie a conversa!</p>
                     </div>
+                  ) : (
+                    messages.map((message) => {
+                      // Obter o telefone do cliente da mensagem se selectedChat não tiver
+                      const actualClientPhone = selectedChat.clientPhone || message.instanceChat?.clientPhone || ''
+                      
+                      // Normalizar telefones para comparação
+                      const normalizedSender = message.senderPhone?.replace(/[^0-9]/g, '') || ''
+                      const normalizedClient = actualClientPhone.replace(/[^0-9]/g, '')
+                      
+                      // Determinar quem é o remetente comparando telefones normalizados
+                      const isFromClient = normalizedSender === normalizedClient
+                      const sender = isFromClient ? 'client' : 'agent'
+                      
+                      console.log('📨 Message sender check:', {
+                        messageId: message.id,
+                        content: message.content?.substring(0, 30) + '...',
+                        senderPhone: message.senderPhone,
+                        normalizedSender,
+                        selectedChatClientPhone: selectedChat.clientPhone,
+                        actualClientPhone: actualClientPhone,
+                        normalizedClient,
+                        comparison: `${normalizedSender} === ${normalizedClient}`,
+                        isFromClient,
+                        sender,
+                        willRender: isFromClient ? '⬅️ LEFT (client)' : '➡️ RIGHT (agent)'
+                      })
+                      
+                      return (
+                        <MessageBubble key={message.id} sender={sender}>
+                          <div className="message-content">
+                            {message.content || ''}
+                          </div>
+                          <div className="message-time">
+                            {message.createdAt 
+                              ? new Date(message.createdAt).toLocaleTimeString('pt-AO', { hour: '2-digit', minute: '2-digit' }) 
+                              : ''}
+                          </div>
+                        </MessageBubble>
+                      )
+                    })
                   )}
                 </MessagesArea>
 
@@ -315,14 +369,14 @@ function Chat() {
                   />
                   <button
                     onClick={handleSendMessage}
-                    disabled={!messageInput.trim()}
+                    disabled={!messageInput.trim() || isSending}
                     className="bg-whatsapp-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-whatsapp-secondary transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
                       <line x1="22" y1="2" x2="11" y2="13"></line>
                       <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                     </svg>
-                    Enviar
+                    {isSending ? 'Enviando...' : 'Enviar'}
                   </button>
                 </InputArea>
               </>

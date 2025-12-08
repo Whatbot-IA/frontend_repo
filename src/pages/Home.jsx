@@ -367,7 +367,8 @@ function Home() {
             <div>
               <h4 className="text-lg font-semibold mb-4">Contato</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="mailto:contato@whatbot.com" className="hover:text-whatsapp-primary transition">contato@whatbot.com</a></li>
+                <li><a href="https://github.com/Hudson512" className="hover:text-whatsapp-primary transition">Hudson Mateque Fundador & Desenvolvedor</a></li>
+                <li><a href="mailto:hmateque@gmail.com" className="hover:text-whatsapp-primary transition">hmateque@gmail.com</a></li>
                 <li><a href="tel:+244929782402" className="hover:text-whatsapp-primary transition">+244 929 782 402</a></li>
               </ul>
             </div>
