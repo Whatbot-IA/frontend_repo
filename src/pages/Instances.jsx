@@ -221,6 +221,25 @@ function Instances() {
         }
       })
 
+      // Evento: Limite de instâncias atingido
+      newSocket.on('instance_limit_exceeded', (error) => {
+        console.error('Limite de instâncias atingido:', error)
+        
+        const limitMessage = error.limit 
+          ? `Você atingiu o limite de ${error.limit} instância${error.limit > 1 ? 's' : ''} do seu plano.`
+          : 'Você atingiu o limite de instâncias do seu plano.'
+        
+        setError(`${limitMessage} ${error.message || 'Atualize seu plano para criar mais instâncias.'}`)
+        setQrCodeUrl(null) // Limpar QR code
+        setConnectionStatus('limit_exceeded') // Status específico para limite atingido
+        setIsSocketConnected(false) // Desconectar socket
+        
+        // Fechar o modal após 3 segundos para o usuário ver a mensagem
+        setTimeout(() => {
+          setShowAddModal(false)
+        }, 3000)
+      })
+
       socketRef.current = newSocket
     }
 
@@ -583,7 +602,15 @@ function Instances() {
 
               {/* QR Code Section */}
               <div className="flex justify-center">
-                {connectionStatus === 'ready' ? (
+                {connectionStatus === 'limit_exceeded' ? (
+                  <div className="w-48 h-48 sm:w-64 sm:h-64 flex items-center justify-center bg-red-50 rounded-xl border-4 border-red-500 shadow-lg">
+                    <div className="text-center p-4">
+                      <div className="text-6xl mb-4">🚫</div>
+                      <p className="text-red-800 font-bold text-lg">Limite Atingido</p>
+                      <p className="text-red-600 text-sm mt-2">Fechando em alguns segundos...</p>
+                    </div>
+                  </div>
+                ) : connectionStatus === 'ready' ? (
                   <div className="w-48 h-48 sm:w-64 sm:h-64 flex items-center justify-center bg-green-50 rounded-xl border-4 border-green-500 shadow-lg">
                     <div className="text-center p-4">
                       <div className="text-6xl mb-4">✅</div>
